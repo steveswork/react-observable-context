@@ -1,0 +1,8 @@
+node_modules
+.DS_Store
+.history
+.vscode
+report.*.json
+npm-debug.log*
+dist
+debug.log
