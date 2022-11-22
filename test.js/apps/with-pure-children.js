@@ -7,7 +7,7 @@ import React, {
 
 import { Provider } from '../../src';
 
-import { Editor, ProductDescription, PriceSticker, TallyDisplay } from './normal';
+import { ObservableContext, Editor, ProductDescription, PriceSticker, TallyDisplay } from './normal';
 
 const EditorMemo = memo( Editor );
 const ProductDescriptionMemo = memo( ProductDescription );
@@ -27,7 +27,7 @@ const Product = ({ type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<Provider value={ state }>
+			<Provider context={ ObservableContext } value={ state }>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,

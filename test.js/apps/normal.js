@@ -1,16 +1,19 @@
 import React, {
 	useCallback,
+	useContext,
 	useEffect,
 	useRef,
 	useState
 } from 'react';
 
-import { Provider, useStore } from '../../src';
+import { Provider, createContext } from '../../src';
+
+export const ObservableContext = createContext();
 
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { getState, subscribe } = useStore();
+	const { getState, subscribe } = useContext( ObservableContext );
 
 	const [ , setUpdateTs ] = useState();
 
@@ -36,7 +39,7 @@ TallyDisplay.displayName = 'TallyDisplay';
 /** @type {React.FC<void>} */
 export const Editor = () => {
 
-	const { setState } = useStore();
+	const { setState } = useContext( ObservableContext );
 
 	const priceInputRef = useRef();
 	const colorInputRef = useRef();
@@ -80,7 +83,7 @@ Editor.displayName = 'Editor';
 /** @type {React.FC<void>} */
 export const ProductDescription = () => {
 
-	const store = useStore();
+	const store = useContext( ObservableContext );
 
 	const [ , setUpdateTs ] = useState();
 
@@ -104,7 +107,7 @@ ProductDescription.displayName = 'ProductDescription';
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const store = useStore();
+	const store = useContext( ObservableContext );
 
 	const [ price, setPrice ] = useState(() => store.getState( s => s.price ));
 
@@ -138,7 +141,7 @@ export const Product = ({ type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<Provider value={ state }>
+			<Provider context={ ObservableContext } value={ state }>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,

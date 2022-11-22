@@ -1,7 +1,6 @@
 import React, {
-	createContext,
+	createContext as _createContext,
 	useCallback,
-	useContext,
 	useEffect,
 	useRef,
 	useState
@@ -23,10 +22,10 @@ const reportNonReactUsage = () => {
 const defaultSelector = state => state;
 
 /**
- * @type {ObservableContext<T>}
+ * @returns {ObservableContext<T>}
  * @template {State} T
  */
-const StoreContext = createContext({
+export const createContext = () => _createContext({
 	getState: reportNonReactUsage,
 	resetState: reportNonReactUsage,
 	setState: reportNonReactUsage,
@@ -34,17 +33,17 @@ const StoreContext = createContext({
 });
 
 /**
- * @return {Store<T>}
+ * @type {import("react").FC<{
+ * 		children?: import("react").ReactNode,
+ * 		context: ObservableContext<T>,
+ * 		value: T
+ * }>}
  * @template {State} T
  */
-export const useStore = () => useContext( StoreContext );
-
-/**
- * @type {import("react").Provider<T>}
- * @template {State} T
- */
-export const Provider = ({ children = null, value }) => {
+export const Provider = ({ children = null, context, value }) => {
 	const valueRef = useRef( value );
+	/** @type {ObservableContext<T>} */
+	const [ StoreContext ] = useState( context );
 	/** @type {[Set<Listener<T>>, Function]} */
 	const [ listeners ] = useState(() => new Set());
 	/** @type {Listener<T>} */

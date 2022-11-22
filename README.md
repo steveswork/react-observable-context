@@ -10,13 +10,13 @@ npm install --save @webkrafters/react-hoc-memo
 
 ## API
 
-The React-Observable-Context package exports only **2** modules namely: the **Provider** component and the **useStore** method.
+The React-Observable-Context package exports only **2** modules namely: the **createContext** method and the **Provider** component.
 
-The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. No React::createContext(...) nor any other preparation is required.
+`createContext` is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
-The `useStore` returns the context `store` object for consuming the React-Observable-Context.
+The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. Supply the context to its `context` prop and the initial state to its `value` prop as is customary to React::Provider.
 
-The context `store` exposes **4** methods for interacting with the context namely:
+The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
 * **getState**: (selector?: (state: State) => any) => any
 
@@ -28,14 +28,21 @@ The context `store` exposes **4** methods for interacting with the context namel
 
 ## Usage
 
+<i><u>context.js</u></i>
+
+    import { createContext } from '@webkrafters/react-observable-context';
+	const ObservableContext = createContext();
+    export default ObservableContext;
+
 <i><u>tally-display.js</u></i>
 
-    import React, { useEffect, useState } from 'react';
-    import { useStore } from '@webkrafters/react-observable-context';
+    import React, { useContext, useEffect, useState } from 'react';
+
+	import ObservableContext from './context';
     
     const TallyDisplay = () => {
     
-	    const { getState, subscribe } = useStore();
+	    const { getState, subscribe } = useContext( ObservableContext );
     
 	    const [ , setUpdateTs ] = useState();
 	    
@@ -62,12 +69,13 @@ The context `store` exposes **4** methods for interacting with the context namel
 
 <i><u>editor.js</u></i>
 
-    import React, { useCallback, useEffect, useRef } from 'react';
-    import { useStore } from '@webkrafters/react-observable-context';
+    import React, { useCallback, useContext, useEffect, useRef } from 'react';
+
+	import ObservableContext from './context';
     
     const Editor = () => {
     
-	    const { setState } = useStore();
+	    const { setState } = useContext( ObservableContext );
     
 	    const priceInputRef = useRef();
 	    const colorInputRef = useRef();
@@ -114,12 +122,13 @@ The context `store` exposes **4** methods for interacting with the context namel
 
 <i><u>product-description.js</u></i>
 
-    import React, { useEffect, useState } from 'react';
-    import { useStore } from '@webkrafters/react-observable-context';
+    import React, { useContext, useEffect, useState } from 'react';
+
+	import ObservableContext from './context';
     
     const ProductDescription = () => {
     
-	    const store = useStore();
+	    const store = useContext( ObservableContext );
 	    
 	    const [ , setUpdateTs ] = useState();
 	    
@@ -145,12 +154,13 @@ The context `store` exposes **4** methods for interacting with the context namel
 
 <i><u>price-sticker.js</u></i>
 
-    import React, { useEffect, useState } from 'react'
-    import { useStore } from '@webkrafters/react-observable-context';
+    import React, { useContext, useEffect, useState } from 'react';
+
+	import ObservableContext from './context';
     
     const PriceSticker = () => {
     
-	    const store = useStore();
+	    const store = useContext( ObservableContext );
 	    
 	    const [ price, setPrice ] = useState(() => store.getState( s => s.price ));
     
@@ -174,6 +184,8 @@ The context `store` exposes **4** methods for interacting with the context namel
 
     import React, { useCallback, useEffect, useState } from 'react';
     import { Provider } from '@webkrafters/react-observable-context';
+
+	import ObservableContext from './context';
     
     import Editor from './editor';
     import PriceSticker from './price-sticker';
@@ -200,7 +212,7 @@ The context `store` exposes **4** methods for interacting with the context namel
 			    <div style={{ marginBottom: 10 }}>
 				    <label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			    </div>
-			    <Provider value={ state }>
+			    <Provider context={ ObservableContext } value={ state }>
 				    <div style={{
 					    borderBottom: '1px solid #333',
 					    marginBottom: 10,
