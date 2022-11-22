@@ -35,6 +35,7 @@
     "eslint-plugin-react": "^7.31.11",
     "eslint-plugin-standard": "^5.0.0",
     "jest-cli": "^26.6.3",
+    "react-dom": "^18.2.0",
     "react-performance-testing": "^2.0.0",
     "typescript": "^4.8.2"
   },
@@ -69,8 +70,9 @@
   },
   "scripts": {
     "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc",
-    "test": "eslint --fix && jest --watchAll"
+    "test": "eslint --fix && jest",
+    "test:watch": "eslint --fix && jest --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "0.0.1"
+  "version": "0.0.2"
 }

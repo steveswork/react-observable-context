@@ -1,5 +1,3 @@
-/* eslint react/display-name: 0 */
-
 import React, {
 	memo,
 	useCallback,
@@ -17,7 +15,7 @@ const PriceStickerMemo = memo( PriceSticker );
 const TallyDisplayMemo = memo( TallyDisplay );
 
 /** @type {React.FC<{type:string}>} */
-export const Product = ({ type }) => {
+const Product = ({ type }) => {
 	const [ state, setState ] = useState(() => ({ type, price: 22.5, color: 'Burgundy' }));
 	useEffect(() => {
 		setState({ type }); // use this to update only the changed state
@@ -59,7 +57,7 @@ const App = () => {
 			<div style={{ marginBottom: 10 }}>
 				<label>Type: <input onKeyUp={ updateType } placeholder="override product type here..." /></label>
 			</div>
-			<ProductMemo type={productType} />
+			<ProductMemo type={ productType } />
 		</div>
 	);
 };

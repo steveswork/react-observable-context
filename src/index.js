@@ -94,26 +94,30 @@ Provider.displayName = 'ObservableContext.Provider';
  */
 
 /**
-	@typedef {(newValue: PartialState<T>, oldValue: PartialState<T>) => void} Listener
-	@template {State} T
+ * @typedef {(newValue: PartialState<T>, oldValue: PartialState<T>) => void} Listener
+ * @template {State} T
  */
+
 /** @typedef {{[x:string]: *}} State */
+
 /**
-	@typedef {{[x:string]: *} & {[K in keyof T]?: T[K]}} PartialState
-	@template {State} T
+ * @typedef {{[x:string]: *} & {[K in keyof T]?: T[K]}} PartialState
+ * @template {State} T
  */
+
 /**
-	@typedef {(state: T) => PartialState<T>} Selector
-	@template {State} T
+ * @typedef {(state: T) => *} Selector
+ * @template {State} T
  */
+
 /**
  * @typedef {{
- *   getState: OptionalTask<(selector?: Selector<T>) => PartialState<T>>,
+ *   getState: OptionalTask<(selector?: Selector<T>) => *>,
  *   resetState: OptionalTask<VoidFunction>,
- *   setState: OptionalTask<Listener<T>>,
+ *   setState: OptionalTask<(changes: PartialState<T>) => void>,
  *   subscribe: OptionalTask<(listener: Listener<T>) => Unsubscribe>
  * }} Store
-	@template {State} T
+ * @template {State} T
  */
 
 /** @typedef {VoidFunction} Unsubscribe */

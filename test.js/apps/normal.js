@@ -8,14 +8,14 @@ import React, {
 import { Provider, useStore } from '../../src';
 
 /** @type {React.FC<void>} */
-const TallyDisplay = () => {
+export const TallyDisplay = () => {
 
 	const { getState, subscribe } = useStore();
 
 	const [ , setUpdateTs ] = useState();
 
-	useEffect(() => subscribe( changes => {
-		[ 'color', 'price', 'type' ].some( k => k in changes ) &&
+	useEffect(() => subscribe( newValue => {
+		[ 'color', 'price', 'type' ].some( k => k in newValue ) &&
 		setUpdateTs( Date.now() );
 	}), []);
 
@@ -84,8 +84,8 @@ export const ProductDescription = () => {
 
 	const [ , setUpdateTs ] = useState();
 
-	useEffect(() => store.subscribe( changes => {
-		( 'color' in changes || 'type' in changes ) &&
+	useEffect(() => store.subscribe( newValue => {
+		( 'color' in newValue || 'type' in newValue ) &&
 		setUpdateTs( Date.now() );
 	} ), []);
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
@@ -108,8 +108,8 @@ export const PriceSticker = () => {
 
 	const [ price, setPrice ] = useState(() => store.getState( s => s.price ));
 
-	useEffect(() => store.subscribe( changes => {
-		'price' in changes && setPrice( changes.price );
+	useEffect(() => store.subscribe( newValue => {
+		'price' in newValue && setPrice( newValue.price );
 	} ), []);
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
@@ -169,7 +169,7 @@ const App = () => {
 			<div style={{ marginBottom: 10 }}>
 				<label>Type: <input onKeyUp={ updateType } placeholder="override product type here..." /></label>
 			</div>
-			<Product type={productType} />
+			<Product type={ productType } />
 		</div>
 	);
 };
