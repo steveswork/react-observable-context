@@ -14,7 +14,7 @@ The React-Observable-Context package exports only **2** modules namely: the **cr
 
 `createContext` is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
-The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` props <i>(discussed in the prehooks section below)</i>.
+The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
 
 <i><u>Note:</u></i> the Provider `context` prop is not updateable. Once set, all further updates to this prop are ignored.
 
