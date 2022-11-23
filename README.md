@@ -4,9 +4,9 @@ Observable react context - prevents an automatic total component tree re-renderi
 
 <h4><u>Install</u></h4>
 
-npm i -S @webkrafters/react-hoc-memo
+npm i -S @webkrafters/react-observable-context
 
-npm install --save @webkrafters/react-hoc-memo
+npm install --save @webkrafters/react-observable-context
 
 ## API
 
