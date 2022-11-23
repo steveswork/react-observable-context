@@ -46,33 +46,58 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 	const ObservableContext = createContext();
     export default ObservableContext;
 
+<i><u>reset.js</u></i>
+
+    import React, { useContext } from 'react';
+
+	import ObservableContext from './context';
+	
+	const Reset = () => {
+		
+		const { resetState } = useContext( ObservableContext );
+		
+		useEffect(() => console.log( 'Reset component rendered.....' ));
+		
+		return ( <button onClick={ resetState }>reset context</button> );
+	};
+	Reset.displayName = 'Reset';
+
+    export default Reset;
+
 <i><u>tally-display.js</u></i>
 
     import React, { useContext, useEffect, useState } from 'react';
 
 	import ObservableContext from './context';
+
+	import Reset from './reset';
     
     const TallyDisplay = () => {
     
 	    const { getState, subscribe } = useContext( ObservableContext );
     
-	    const [ , setUpdateTs ] = useState();
+	    const [ , tripRender ] = useState( false );
 	    
 	    useEffect(() => subscribe( newValue => {
 		    [ 'color', 'price', 'type' ].some( k => k in newValue ) &&
-		    setUpdateTs( Date.now() );
+		    tripRender( s => !s );
 	    }), []);
 	    
 	    useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
     
 	    return (
-		    <table>
-			    <tbody>
-				    <tr><td><label>Type:</label></td><td>{ getState( s => s.type ) }</td></tr>
-				    <tr><td><label>Color:</label></td><td>{ getState( s => s.color ) }</td></tr>
-				    <tr><td><label>Price:</label></td><td>{ getState( s => s.price ).toFixed( 2 ) }</td></tr>
-			    </tbody>
-			</table>
+			<div>
+				<table>
+					<tbody>
+						<tr><td><label>Type:</label></td><td>{ getState( s => s.type ) }</td></tr>
+						<tr><td><label>Color:</label></td><td>{ getState( s => s.color ) }</td></tr>
+						<tr><td><label>Price:</label></td><td>{ getState( s => s.price ).toFixed( 2 ) }</td></tr>
+					</tbody>
+				</table>
+				<div style={{ textAlign: 'right' }}>
+					<Reset />
+				</div>
+			</div>
 		);
     };
     TallyDisplay.displayName = 'TallyDisplay';
@@ -142,11 +167,11 @@ The context's store update operation adheres to **2** user supplied prehooks whe
     
 	    const store = useContext( ObservableContext );
 	    
-	    const [ , setUpdateTs ] = useState();
+	    const [ , tripRender ] = useState( false );
 	    
 	    useEffect(() => store.subscribe( newValue => {
 		    ( 'color' in newValue || 'type' in newValue ) &&
-		    setUpdateTs( Date.now() );
+		    tripRender( s => !s );
 	    } ), []);
 	    
 	    useEffect(() => console.log( 'ProductDescription component rendered.....' ));
@@ -204,7 +229,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
     import ProductDescription from './product-description';
     import TallyDisplay from './tally-display';
     
-    const Product = ({ type }) => {
+    const Product = ({ prehooks = undefined, type }) => {
 	    
 	    const [ state, setState ] = useState(() => ({
 		    color: 'Burgundy',
@@ -224,7 +249,11 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 			    <div style={{ marginBottom: 10 }}>
 				    <label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			    </div>
-			    <Provider context={ ObservableContext } value={ state }>
+			<Provider
+				context={ ObservableContext }
+				prehooks={ prehooks }
+				value={ state }
+			>
 				    <div style={{
 					    borderBottom: '1px solid #333',
 					    marginBottom: 10,
@@ -245,7 +274,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>app.js</u></i>
 
-    import React, { useCallback, useState } from 'react';
+    import React, { useCallback, useMemo, useState } from 'react';
     
     import Product from './product';
     
@@ -254,6 +283,17 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 	    const [ productType, setProductType ] = useState( 'Calculator' );
     
 	    const updateType = useCallback( e => setProductType( e.target.value ), [] );
+		
+		const prehooks = React.useMemo(() => ({
+			resetState: ( ...args ) => {
+				console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
+				return true;
+			},
+			setState: ( ...args ) => {
+				console.log( 'setting state with >>>> ', JSON.stringify( args ) );
+				return true;
+			}
+		}), []);
     
 	    return (
 		    <div className="App">
@@ -262,10 +302,9 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 			    <div style={{ marginBottom: 10 }}>
 				    <label>Type: <input onKeyUp={ updateType } placeholder="override product type here..." /></label>
 			    </div>
-			    <Product type={ productType } />
+			    <Product prehooks={ prehooks } type={ productType } />
 		    </div>
 	    );
-	    
     };
     App.displayName = 'App';
     
