@@ -14,7 +14,9 @@ The React-Observable-Context package exports only **2** modules namely: the **cr
 
 `createContext` is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
-The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. Supply the context to its `context` prop and the initial state to its `value` prop as is customary to React::Provider.
+The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` props <i>(discussed in the prehooks section below)</i>.
+
+<i><u>Note:</u></i> the Provider `context` prop is not updateable. Once set, all further updates to this prop are ignored.
 
 The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
@@ -25,6 +27,16 @@ The context's `store` exposes **4** methods for interacting with the context's i
 * **setState**: (changes: PartialState\<State\>) => void
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
+
+### Prehooks
+
+The context's store update operation adheres to **2** user supplied prehooks when present. Otherwise, the update operation proceeds normally to completion. They are named **resetState** and **setState** after the store update methods which utilize them.
+
+* **resetState**: (state: {current: State, original: State}) => boolean
+
+* **setState**: (newChanges: PartialState\<State\>) => boolean
+
+**usecase**: prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue OR `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
 
 ## Usage
 

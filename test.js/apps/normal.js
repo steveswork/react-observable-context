@@ -11,27 +11,42 @@ import { Provider, createContext } from '../../src';
 export const ObservableContext = createContext();
 
 /** @type {React.FC<void>} */
+const Reset = () => {
+	const { resetState } = useContext( ObservableContext );
+
+	useEffect(() => console.log( 'Reset component rendered.....' ));
+
+	return ( <button onClick={ resetState }>reset context</button> );
+};
+Reset.displayName = 'Reset';
+
+/** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
 	const { getState, subscribe } = useContext( ObservableContext );
 
-	const [ , setUpdateTs ] = useState();
+	const [ , tripRender ] = useState( false );
 
 	useEffect(() => subscribe( newValue => {
 		[ 'color', 'price', 'type' ].some( k => k in newValue ) &&
-		setUpdateTs( Date.now() );
+		tripRender( s => !s );
 	}), []);
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
 	return (
-		<table>
-			<tbody>
-				<tr><td><label>Type:</label></td><td>{ getState( s => s.type ) }</td></tr>
-				<tr><td><label>Color:</label></td><td>{ getState( s => s.color ) }</td></tr>
-				<tr><td><label>Price:</label></td><td>{ getState( s => s.price ).toFixed( 2 ) }</td></tr>
-			</tbody>
-		</table>
+		<div>
+			<table>
+				<tbody>
+					<tr><td><label>Type:</label></td><td>{ getState( s => s.type ) }</td></tr>
+					<tr><td><label>Color:</label></td><td>{ getState( s => s.color ) }</td></tr>
+					<tr><td><label>Price:</label></td><td>{ getState( s => s.price ).toFixed( 2 ) }</td></tr>
+				</tbody>
+			</table>
+			<div style={{ textAlign: 'right' }}>
+				<Reset />
+			</div>
+		</div>
 	);
 };
 TallyDisplay.displayName = 'TallyDisplay';
@@ -85,12 +100,13 @@ export const ProductDescription = () => {
 
 	const store = useContext( ObservableContext );
 
-	const [ , setUpdateTs ] = useState();
+	const [ , tripRender ] = useState( false );
 
 	useEffect(() => store.subscribe( newValue => {
 		( 'color' in newValue || 'type' in newValue ) &&
-		setUpdateTs( Date.now() );
+		tripRender( s => !s );
 	} ), []);
+
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 
 	const color = store.getState( s => s.color );
@@ -114,6 +130,7 @@ export const PriceSticker = () => {
 	useEffect(() => store.subscribe( newValue => {
 		'price' in newValue && setPrice( newValue.price );
 	} ), []);
+
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
 	return (
@@ -124,8 +141,13 @@ export const PriceSticker = () => {
 };
 PriceSticker.displayName = 'PriceSticker';
 
-/** @type {React.FC<{type:string}>} */
-export const Product = ({ type }) => {
+/**
+ * @type {React.FC<{
+ * 		prehooks?: import("../../src").Prehooks<{[x:string]:*}>,
+ * 		type:string
+ * }>}
+ */
+export const Product = ({ prehooks = undefined, type }) => {
 
 	const [ state, setState ] = useState(() => ({ type, price: 22.5, color: 'Burgundy' }));
 
@@ -141,7 +163,11 @@ export const Product = ({ type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<Provider context={ ObservableContext } value={ state }>
+			<Provider
+				context={ ObservableContext }
+				prehooks={ prehooks }
+				value={ state }
+			>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,

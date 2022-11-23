@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 
 import { UsageError } from '../src';
 
-import AppNormal, { TallyDisplay } from './apps/normal';
+import AppNormal, { Product, TallyDisplay } from './apps/normal';
 import AppWithPureChildren from './apps/with-pure-children';
 
 beforeAll(() => {
@@ -18,7 +18,7 @@ afterAll(() => jest.resetAllMocks());
 afterEach( cleanup );
 
 const tranformRenderCount = (() => {
-	const compNames = [ 'Editor', 'PriceSticker', 'ProductDescription', 'TallyDisplay' ];
+	const compNames = [ 'Editor', 'PriceSticker', 'ProductDescription', 'Reset', 'TallyDisplay' ];
 	return ( renderCount, baseRenderCount = {} ) => compNames.reduce(( obj, k ) => {
 		obj[ k ] = renderCount.current[ k ].value - ( baseRenderCount[ k ] || 0 );
 		return obj;
@@ -37,9 +37,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppNormal /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Price:' ), { target: { value: '123' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update price' } ) );
 					await wait(() => {
@@ -55,9 +53,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppNormal /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Color:' ), { target: { value: 'Navy' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update color' } ) );
 					await wait(() => {
@@ -73,9 +69,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppNormal /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					await wait(() => {
@@ -93,9 +87,7 @@ describe( 'ReactObservableContext', () => {
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					await wait(() => {
@@ -113,9 +105,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppWithPureChildren /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Price:' ), { target: { value: '123' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update price' } ) );
 					await wait(() => {
@@ -131,9 +121,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppWithPureChildren /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Color:' ), { target: { value: 'Navy' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update color' } ) );
 					await wait(() => {
@@ -149,9 +137,7 @@ describe( 'ReactObservableContext', () => {
 					const { renderCount } = perf( React );
 					render( <AppWithPureChildren /> );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					await wait(() => {
@@ -169,9 +155,7 @@ describe( 'ReactObservableContext', () => {
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					let baseRenderCount;
-					await wait(() => {
-						baseRenderCount = tranformRenderCount( renderCount );
-					});
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
 					await wait(() => {
@@ -192,9 +176,7 @@ describe( 'ReactObservableContext', () => {
 				const { renderCount } = perf( React );
 				render( <AppWithPureChildren /> );
 				let baseRenderCount;
-				await wait(() => {
-					baseRenderCount = tranformRenderCount( renderCount );
-				});
+				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
 				fireEvent.keyUp( screen.getByLabelText( 'Type:', { key: 'A', code: 'KeyA' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
@@ -209,9 +191,7 @@ describe( 'ReactObservableContext', () => {
 				const { renderCount } = perf( React );
 				render( <AppWithPureChildren /> );
 				let baseRenderCount;
-				await wait(() => {
-					baseRenderCount = tranformRenderCount( renderCount );
-				});
+				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
 				fireEvent.keyUp( screen.getByLabelText( '$', { key: '5', code: 'Key5' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
@@ -228,9 +208,7 @@ describe( 'ReactObservableContext', () => {
 				const { renderCount } = perf( React );
 				render( <AppNormal /> );
 				let baseRenderCount;
-				await wait(() => {
-					baseRenderCount = tranformRenderCount( renderCount );
-				});
+				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
 				fireEvent.keyUp( screen.getByLabelText( 'Type:', { key: 'A', code: 'KeyA' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
@@ -245,9 +223,7 @@ describe( 'ReactObservableContext', () => {
 				const { renderCount } = perf( React );
 				render( <AppNormal /> );
 				let baseRenderCount;
-				await wait(() => {
-					baseRenderCount = tranformRenderCount( renderCount );
-				});
+				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
 				fireEvent.keyUp( screen.getByLabelText( '$', { key: '5', code: 'Key5' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
@@ -257,6 +233,151 @@ describe( 'ReactObservableContext', () => {
 					expect( netCount.TallyDisplay ).toBe( 2 );
 				});
 				cleanupPerfTest();
+			} );
+		} );
+	} );
+	describe( 'prehooks', () => {
+		describe( 'resetState prehook', () => {
+			describe( 'when `resetState` prehook does not exist on the context', () => {
+				test( 'completes `store.resetState` method call', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze( expect.any( Object ) );
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.click( screen.getByRole( 'button', { name: 'reset context' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
+			} );
+			describe( 'when `resetState` prehook exists on the context', () => {
+				test( 'is called by the `store.resetState` method', async () => {
+					const prehooks = Object.freeze({ resetState: jest.fn().mockReturnValue( false ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					fireEvent.change( screen.getByLabelText( 'New Color:' ), { target: { value: 'Teal' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update color' } ) );
+					prehooks.resetState.mockClear();
+					fireEvent.click( screen.getByRole( 'button', { name: 'reset context' } ) );
+					expect( prehooks.resetState ).toHaveBeenCalledTimes( 1 );
+					expect( prehooks.resetState ).toHaveBeenCalledWith( expect.objectContaining({
+						// current: context state value after the `update type` & `update color` button clicks
+						current: expect.objectContaining({ color: 'Teal', price: 22.5, type: 'Bag' }),
+						// original: obtained from the './normal' Product >> Provider value prop
+						original: expect.objectContaining({ color: 'Burgundy', price: 22.5, type: 'Computer' })
+					}) );
+				} );
+				test( 'completes `store.setState` method call if `setState` prehook returns TRUTHY', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze({ resetState: jest.fn().mockReturnValue( true ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.click( screen.getByRole( 'button', { name: 'reset context' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
+				test( 'aborts `store.setState` method call if `setState` prehook returns FALSY', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze({ resetState: jest.fn().mockReturnValue( false ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.click( screen.getByRole( 'button', { name: 'reset context' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 0 ); // DID NOT RECEIVE SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 0 ); // DID NOT RECEIVE SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
+			} );
+		} );
+		describe( 'setState prehook', () => {
+			describe( 'when `setState` prehook does not exist on the context', () => {
+				test( 'completes `store.setState` method call', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze( expect.any( Object ) );
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
+			} );
+			describe( 'when `setState` prehook exists on the context', () => {
+				test( 'is called by the `store.setState` method', async () => {
+					const prehooks = Object.freeze({ setState: jest.fn().mockReturnValue( false ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					prehooks.setState.mockClear();
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					expect( prehooks.setState ).toHaveBeenCalledTimes( 1 );
+					expect( prehooks.setState ).toHaveBeenCalledWith({ type: 'Bag' });
+				} );
+				test( 'completes `store.setState` method call if `setState` prehook returns TRUTHY', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze({ setState: jest.fn().mockReturnValue( true ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 1 ); // RECEIVED SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
+				test( 'aborts `store.setState` method call if `setState` prehook returns FALSY', async () => {
+					const { renderCount } = perf( React );
+					const prehooks = Object.freeze({ setState: jest.fn().mockReturnValue( false ) });
+					render( <Product prehooks={ prehooks } type="Computer" /> );
+					let baseRenderCount;
+					await wait(() => { baseRenderCount = tranformRenderCount( renderCount ) });
+					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
+					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
+					await wait(() => {
+						const netCount = tranformRenderCount( renderCount, baseRenderCount );
+						expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.ProductDescription ).toBe( 0 ); // DID NOT RECEIVE SUBSCRIBED STATE CHANGE NOTIFICATION
+						expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+						expect( netCount.TallyDisplay ).toBe( 0 ); // DID NOT RECEIVE SUBSCRIBED STATE CHANGE NOTIFICATION
+					});
+					cleanupPerfTest();
+				} );
 			} );
 		} );
 	} );

@@ -6,6 +6,7 @@ import React, {
 	useState
 } from 'react';
 
+import clonedeep from 'lodash.clonedeep';
 import isEmpty from 'lodash.isempty';
 
 export class UsageError extends Error {}
@@ -33,47 +34,97 @@ export const createContext = () => _createContext({
 });
 
 /**
+ * @readonly
+ * @type {Prehooks<T>}
+ * @template {State} T
+ */
+const defaultPrehooks = Object.freeze({});
+
+/**
+ * @param {T} state
+ * @param {PartialState<T>} newState
+ * @param {Listener<T>} onStateChange
+ * @template {State} T
+ */
+const _setState = ( state, newState, onStateChange ) => {
+	/** @type {PartialState<T>} */
+	const newChanges = {};
+	/** @type {PartialState<T>} */
+	const replacedValue = {};
+	for( const k in newState ) {
+		if( state[ k ] === newState[ k ] ) { continue }
+		replacedValue[ k ] = state[ k ];
+		state[ k ] = newState[ k ];
+		newChanges[ k ] = newState[ k ];
+	}
+	!isEmpty( newChanges ) && onStateChange( newChanges, replacedValue );
+};
+
+/**
+ * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
+ *
  * @type {import("react").FC<{
  * 		children?: import("react").ReactNode,
  * 		context: ObservableContext<T>,
+ * 		prehooks?: Prehooks<T>
  * 		value: T
  * }>}
  * @template {State} T
  */
-export const Provider = ({ children = null, context, value }) => {
-	const valueRef = useRef( value );
-	/** @type {ObservableContext<T>} */
-	const [ StoreContext ] = useState( context );
+export const Provider = ({
+	children = null,
+	context,
+	prehooks = defaultPrehooks,
+	value
+}) => {
+
+	const prehooksRef = useRef( prehooks );
+	const initialState = useRef( value );
+
+	/** @type {[T, Function]} */
+	const [ state ] = useState(() => clonedeep( value ));
 	/** @type {[Set<Listener<T>>, Function]} */
 	const [ listeners ] = useState(() => new Set());
+
 	/** @type {Listener<T>} */
 	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
+
 	/** @type {Store<T>["getState"]} */
-	const getState = useCallback(( selector = defaultSelector ) => selector( valueRef.current ), []);
+	const getState = useCallback(( selector = defaultSelector ) => selector( state ), []);
+
 	/** @type {Store<T>["resetState"]} */
-	const resetState = useCallback(() => setState( value ), []);
+	const resetState = useCallback(() => {
+		const original = clonedeep( initialState.current );
+		( !( 'resetState' in prehooksRef.current ) ||
+			prehooksRef.current.resetState({
+				current: clonedeep( state ), original
+			})
+		) && _setState( state, original, onChange )
+	}, []);
+
 	/** @type {Store<T>["setState"]} */
 	const setState = useCallback( changes => {
-		/** @type {PartialState<T>} */
-		const newChanges = {};
-		/** @type {PartialState<T>} */
-		const replacedValue = {};
-		for( const k in changes ) {
-			if( valueRef.current[ k ] === changes[ k ] ) { continue }
-			replacedValue[ k ] = valueRef.current[ k ];
-			valueRef.current[ k ] = changes[ k ];
-			newChanges[ k ] = changes[ k ];
-		}
-		!isEmpty( newChanges ) && onChange( newChanges, replacedValue );
+		( !( 'setState' in prehooksRef.current ) ||
+			prehooksRef.current.setState( changes )
+		) && _setState( state, changes, onChange );
 	}, [] );
+
 	/** @type {Store<T>["subscribe"]} */
 	const subscribe = useCallback( listener => {
 		listeners.add( listener );
 		return () => listeners.delete( listener );
 	}, [] );
-	useEffect(() => setState( value ), [ value ]);
+
+	useEffect(() => setState( clonedeep( value ) ), [ value ]);
+	useEffect(() => { prehooksRef.current = prehooks }, [ prehooks ]);
 	/** @type {[Store<T>, Function]} */
-	const [ store ] = useState(() => ({ getState, resetState, setState, subscribe }));
+
+	const [ store ] = useState(() => ({
+		getState, resetState, setState, subscribe
+	}));
+	/** @type {ObservableContext<T>} */
+	const [ StoreContext ] = useState( context );
+
 	return (
 		<StoreContext.Provider value={ store }>
 			{ children }
@@ -106,6 +157,14 @@ Provider.displayName = 'ObservableContext.Provider';
 
 /**
  * @typedef {(state: T) => *} Selector
+ * @template {State} T
+ */
+
+/**
+ * @typedef {{
+ * 		resetState?: (state: { current: T, original: T}) => boolean,
+ * 		setState?: (newChanges: PartialState<T>) => boolean
+ * }} Prehooks
  * @template {State} T
  */
 
