@@ -74,11 +74,11 @@ const usePrehooksRef = prehooks => {
 /**
  * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
  *
- * @type {import("react").FC<{
- * 		children?: import("react").ReactNode,
+ * @type {React.FC<{
+ * 		children?: React.ReactNode,
  * 		context: ObservableContext<T>,
  * 		prehooks?: Prehooks<T>
- * 		value: T
+ * 		value: PartialState<T>
  * }>}
  * @template {State} T
  */
@@ -145,7 +145,7 @@ export const Provider = ({
 Provider.displayName = 'ObservableContext.Provider';
 
 /**
- * @typedef {import("react").Context<Store<T>>} ObservableContext
+ * @typedef {React.Context<Store<T>>} ObservableContext
  * @template {State} T
  */
 
