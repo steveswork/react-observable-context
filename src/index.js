@@ -17,7 +17,8 @@ const reportNonReactUsage = () => {
 };
 
 /**
- * @type {(state: T) => PartialState<T>}
+ * @param {T} state
+ * @return {PartialState<T>}
  * @template {State} T
  */
 const defaultSelector = state => state;
@@ -61,6 +62,16 @@ const _setState = ( state, newState, onStateChange ) => {
 };
 
 /**
+ * @param {Prehooks<T>} prehooks
+ * @template {State} T
+ */
+const usePrehooksRef = prehooks => {
+	const prehooksRef = useRef( prehooks );
+	useEffect(() => { prehooksRef.current = prehooks }, [ prehooks ]);
+	return prehooksRef;
+};
+
+/**
  * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
  *
  * @type {import("react").FC<{
@@ -78,13 +89,15 @@ export const Provider = ({
 	value
 }) => {
 
-	const prehooksRef = useRef( prehooks );
+	const prehooksRef = usePrehooksRef( prehooks );
 	const initialState = useRef( value );
 
-	/** @type {[T, Function]} */
-	const [ state ] = useState(() => clonedeep( value ));
 	/** @type {[Set<Listener<T>>, Function]} */
 	const [ listeners ] = useState(() => new Set());
+	/** @type {[T, Function]} */
+	const [ state ] = useState(() => clonedeep( value ));
+	/** @type {ObservableContext<T>} */
+	const [ StoreContext ] = useState( context );
 
 	/** @type {Listener<T>} */
 	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
@@ -104,6 +117,7 @@ export const Provider = ({
 
 	/** @type {Store<T>["setState"]} */
 	const setState = useCallback( changes => {
+		changes = clonedeep( changes );
 		( !( 'setState' in prehooksRef.current ) ||
 			prehooksRef.current.setState( changes )
 		) && _setState( state, changes, onChange );
@@ -116,14 +130,11 @@ export const Provider = ({
 	}, [] );
 
 	useEffect(() => setState( clonedeep( value ) ), [ value ]);
-	useEffect(() => { prehooksRef.current = prehooks }, [ prehooks ]);
-	/** @type {[Store<T>, Function]} */
 
+	/** @type {[Store<T>, Function]} */
 	const [ store ] = useState(() => ({
 		getState, resetState, setState, subscribe
 	}));
-	/** @type {ObservableContext<T>} */
-	const [ StoreContext ] = useState( context );
 
 	return (
 		<StoreContext.Provider value={ store }>

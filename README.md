@@ -1,6 +1,8 @@
 ﻿# React-Observable-Context
 
-Observable react context - prevents an automatic total component tree re-rendering at context change.
+A context bearing an observable consumer store. State changes within the store's internal state are only broadcasted to components subscribed to the store. In this way, the `React-Observable-Context` prevents repeated automatic re-renderings of entire component trees resulting from ***context*** state changes.
+
+**React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes.
 
 <h4><u>Install</u></h4>
 
@@ -16,13 +18,13 @@ The React-Observable-Context package exports only **2** modules namely: the **cr
 
 The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
 
-<i><u>Note:</u></i> the Provider `context` prop is not updateable. Once set, all further updates to this prop are ignored.
+<i><u>Note:</u></i> the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
 
 The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
 * **getState**: (selector?: (state: State) => any) => any
 
-* **resetState**: VoidFunction // resets the state to the Provider latest `value` prop.
+* **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
 * **setState**: (changes: PartialState\<State\>) => void
 
@@ -36,7 +38,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 * **setState**: (newChanges: PartialState\<State\>) => boolean
 
-**usecase**: prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue OR `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
+***usecase***: prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue OR `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
 
 ## Usage
 
