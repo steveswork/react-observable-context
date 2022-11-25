@@ -16,7 +16,7 @@ The React-Observable-Context package exports **3** modules namely: the **createC
 
 * **createContext** is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
-* **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property names to watch. Change in any of the referenced properties automatically triggers a render of the component calling this hook.  
+* **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
 
 * **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
 
@@ -30,7 +30,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
-* **setState**: (changes: PartialState\<State\>) => void
+* **setState**: (changes: PartialState\<State\>) => void // sets only new/changed top level properties.
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 

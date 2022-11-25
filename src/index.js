@@ -41,25 +41,31 @@ export const createContext = () => _createContext({
  * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
  *
  * @param {ObservableContext<T>} context
- * @param {Array<keyof T>} [watchedKeys = []] Names of state properties to watch. A change in any of the referenced properties results in this component render.
+ * @param {Array<string|keyof T>} [watchedKeys = []] A list of state object property paths to watch. A change in any of the referenced properties results in this component render.
  * @returns {Store<T>}
  * @template {State} T
  */
 export const useContext = ( context, watchedKeys = [] ) => {
+
+	/** @type {Store<T>} */
 	const store = _useContext( context );
+
 	const [ , tripRender ] = useState( false );
+
 	const watched = useMemo(() => (
 		Array.isArray( watchedKeys )
 			? Array.from( new Set( watchedKeys ) )
 			: []
 	), [ watchedKeys ]);
+
 	useEffect(() => {
 		if( !watched.length ) { return }
 		return store.subscribe( newChanges => {
 			watched.some( w => has( newChanges, w ) ) &&
 			tripRender( s => !s );
-		});
+		} );
 	}, [ watched ]);
+
 	return store;
 };
 
