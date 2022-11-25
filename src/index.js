@@ -1,12 +1,15 @@
 import React, {
 	createContext as _createContext,
 	useCallback,
+	useContext as _useContext,
 	useEffect,
+	useMemo,
 	useRef,
 	useState
 } from 'react';
 
 import clonedeep from 'lodash.clonedeep';
+import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
 
 export class UsageError extends Error {}
@@ -33,6 +36,32 @@ export const createContext = () => _createContext({
 	setState: reportNonReactUsage,
 	subscribe: reportNonReactUsage
 });
+
+/**
+ * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
+ *
+ * @param {ObservableContext<T>} context
+ * @param {Array<keyof T>} [watchedKeys = []] Names of state properties to watch. A change in any of the referenced properties results in this component render.
+ * @returns {Store<T>}
+ * @template {State} T
+ */
+export const useContext = ( context, watchedKeys = [] ) => {
+	const store = _useContext( context );
+	const [ , tripRender ] = useState( false );
+	const watched = useMemo(() => (
+		Array.isArray( watchedKeys )
+			? Array.from( new Set( watchedKeys ) )
+			: []
+	), [ watchedKeys ]);
+	useEffect(() => {
+		if( !watched.length ) { return }
+		return store.subscribe( newChanges => {
+			watched.some( w => has( newChanges, w ) ) &&
+			tripRender( s => !s );
+		});
+	}, [ watched ]);
+	return store;
+};
 
 /**
  * @readonly

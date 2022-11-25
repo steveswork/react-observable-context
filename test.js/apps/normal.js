@@ -1,12 +1,11 @@
 import React, {
 	useCallback,
-	useContext,
 	useEffect,
 	useRef,
 	useState
 } from 'react';
 
-import { Provider, createContext } from '../../src';
+import { Provider, createContext, useContext } from '../../src';
 
 export const ObservableContext = createContext();
 
@@ -20,17 +19,12 @@ const Reset = () => {
 };
 Reset.displayName = 'Reset';
 
+const TALLY_DISPLAY_CONTEXT_KEYS = [ 'color', 'price', 'type' ];
+
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { getState, subscribe } = useContext( ObservableContext );
-
-	const [ , tripRender ] = useState( false );
-
-	useEffect(() => subscribe( newValue => {
-		[ 'color', 'price', 'type' ].some( k => k in newValue ) &&
-		tripRender( s => !s );
-	}), []);
+	const { getState } = useContext( ObservableContext, TALLY_DISPLAY_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
@@ -95,17 +89,12 @@ export const Editor = () => {
 };
 Editor.displayName = 'Editor';
 
+const PRODUCT_DESC_CONTEXT_KEYS = [ 'color', 'type' ];
+
 /** @type {React.FC<void>} */
 export const ProductDescription = () => {
 
-	const store = useContext( ObservableContext );
-
-	const [ , tripRender ] = useState( false );
-
-	useEffect(() => store.subscribe( newValue => {
-		( 'color' in newValue || 'type' in newValue ) &&
-		tripRender( s => !s );
-	} ), []);
+	const store = useContext( ObservableContext, PRODUCT_DESC_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 
@@ -120,22 +109,18 @@ export const ProductDescription = () => {
 };
 ProductDescription.displayName = 'ProductDescription';
 
+const PRICE_STICKER_CONTEXT_KEYS = [ 'price' ];
+
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const store = useContext( ObservableContext );
-
-	const [ price, setPrice ] = useState(() => store.getState( s => s.price ));
-
-	useEffect(() => store.subscribe( newValue => {
-		'price' in newValue && setPrice( newValue.price );
-	} ), []);
+	const { getState } = useContext( ObservableContext, PRICE_STICKER_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
-			${ price.toFixed( 2 ) }
+			${ getState( s => s.price ).toFixed( 2 ) }
 		</div>
 	);
 };

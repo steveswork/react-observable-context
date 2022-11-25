@@ -12,13 +12,17 @@ npm install --save @webkrafters/react-observable-context
 
 ## API
 
-The React-Observable-Context package exports only **2** modules namely: the **createContext** method and the **Provider** component.
+The React-Observable-Context package exports **3** modules namely: the **createContext** method, the **useContext** hook and the **Provider** component.
 
-`createContext` is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
+* **createContext** is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
-The `Provider` can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
+* **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property names to watch. Change in any of the referenced properties automatically triggers a render of the component calling this hook.  
 
-<i><u>Note:</u></i> the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
+* **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
+
+***<u>Note:</u>*** the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
+
+### The Store
 
 The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
@@ -38,7 +42,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 * **setState**: (newChanges: PartialState\<State\>) => boolean
 
-***usecase***: prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue OR `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
+***<u>Use case:</u>*** prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue AND `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
 
 ## Usage
 
@@ -50,7 +54,9 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>reset.js</u></i>
 
-    import React, { useContext } from 'react';
+    import React, { useEffect } from 'react';
+
+	import { useContext } from '@webkrafters/react-observable-context';
 
 	import ObservableContext from './context';
 	
@@ -68,22 +74,19 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>tally-display.js</u></i>
 
-    import React, { useContext, useEffect, useState } from 'react';
+    import React, { useEffect } from 'react';
+
+	import { useContext } from '@webkrafters/react-observable-context';
 
 	import ObservableContext from './context';
 
 	import Reset from './reset';
     
+    const CONTEXT_KEYS = [ 'color', 'price', 'type' ];
+    
     const TallyDisplay = () => {
     
-	    const { getState, subscribe } = useContext( ObservableContext );
-    
-	    const [ , tripRender ] = useState( false );
-	    
-	    useEffect(() => subscribe( newValue => {
-		    [ 'color', 'price', 'type' ].some( k => k in newValue ) &&
-		    tripRender( s => !s );
-	    }), []);
+	    const { getState } = useContext( ObservableContext, CONTEXT_KEYS );
 	    
 	    useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
     
@@ -108,7 +111,9 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>editor.js</u></i>
 
-    import React, { useCallback, useContext, useEffect, useRef } from 'react';
+    import React, { useCallback, useEffect, useRef } from 'react';
+
+	import { useContext } from '@webkrafters/react-observable-context';
 
 	import ObservableContext from './context';
     
@@ -152,7 +157,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 				    { ' ' }
 				    <button onClick={ updateType }>update type</button>
 			    </div>
-		    </fieldset>    
+		    </fieldset>
 	    );
 	};
     Editor.displayName = 'Editor';
@@ -161,20 +166,17 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>product-description.js</u></i>
 
-    import React, { useContext, useEffect, useState } from 'react';
+    import React, { useEffect } from 'react';
+
+	import { useContext } from '@webkrafters/react-observable-context';
 
 	import ObservableContext from './context';
+
+	const CONTEXT_KEYS = [ 'color', 'type' ];
     
     const ProductDescription = () => {
     
-	    const store = useContext( ObservableContext );
-	    
-	    const [ , tripRender ] = useState( false );
-	    
-	    useEffect(() => store.subscribe( newValue => {
-		    ( 'color' in newValue || 'type' in newValue ) &&
-		    tripRender( s => !s );
-	    } ), []);
+	    const store = useContext( ObservableContext, CONTEXT_KEYS );
 	    
 	    useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 	    
@@ -193,25 +195,23 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>price-sticker.js</u></i>
 
-    import React, { useContext, useEffect, useState } from 'react';
+    import React, { useEffect } from 'react';
+
+	import { useContext } from '@webkrafters/react-observable-context';
 
 	import ObservableContext from './context';
+
+	const CONTEXT_KEYS  = [ 'price' ];
     
     const PriceSticker = () => {
     
-	    const store = useContext( ObservableContext );
-	    
-	    const [ price, setPrice ] = useState(() => store.getState( s => s.price ));
-    
-	    useEffect(() => store.subscribe( newValue => {
-		    'price' in newValue && setPrice( newValue.price );
-	    } ), []);
+	    const { getState } = useContext( ObservableContext, CONTEXT_KEYS );
 	    
 	    useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 	    
 	    return (
 		    <div style={{ fontSize: 36, fontWeight: 800 }}>
-			    ${ price.toFixed( 2 ) }
+			    ${ getState( s  =>  s.price ).toFixed( 2 ) }
 		    </div>
 	    );
     };
@@ -251,11 +251,11 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 			    <div style={{ marginBottom: 10 }}>
 				    <label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			    </div>
-			<Provider
-				context={ ObservableContext }
-				prehooks={ prehooks }
-				value={ state }
-			>
+				<Provider
+					context={ ObservableContext }
+					prehooks={ prehooks }
+					value={ state }
+				>
 				    <div style={{
 					    borderBottom: '1px solid #333',
 					    marginBottom: 10,
@@ -286,7 +286,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
     
 	    const updateType = useCallback( e => setProductType( e.target.value ), [] );
 		
-		const prehooks = React.useMemo(() => ({
+		const prehooks = useMemo(() => ({
 			resetState: ( ...args ) => {
 				console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
 				return true;

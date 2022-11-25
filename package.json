@@ -9,6 +9,7 @@
   "dependencies": {
     "@types/react": "^18.0.17",
     "lodash.clonedeep": "^4.5.0",
+    "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
     "react": "^18.2.0"
   },
@@ -75,5 +76,5 @@
     "test:watch": "eslint --fix && jest --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "1.1.5"
+  "version": "2.0.0"
 }
