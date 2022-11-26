@@ -11,6 +11,8 @@
     "lodash.clonedeep": "^4.5.0",
     "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
+    "lodash.isequal": "^4.5.0",
+    "lodash.omit": "^4.5.0",
     "react": "^18.2.0"
   },
   "description": "Observable react context - prevents an automatic total component tree tear-down and re-rendering during context updates.",
@@ -72,9 +74,9 @@
   },
   "scripts": {
     "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc",
-    "test": "eslint --fix && jest",
-    "test:watch": "eslint --fix && jest --watchAll"
+    "test": "eslint --fix && jest --updateSnapshot",
+    "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "2.0.1"
+  "version": "2.1.0"
 }

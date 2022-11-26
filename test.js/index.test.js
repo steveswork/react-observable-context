@@ -172,7 +172,7 @@ describe( 'ReactObservableContext', () => {
 	} );
 	describe( 'store updates from outside the Provider tree', () => {
 		describe( 'with pure-component children', () => {
-			test( 'only re-renders children affected by the Provider parent prop change', async () => {
+			test( 'only re-renders Provider children affected by the Provider parent prop change', async () => {
 				const { renderCount } = perf( React );
 				render( <AppWithPureChildren /> );
 				let baseRenderCount;
@@ -204,7 +204,7 @@ describe( 'ReactObservableContext', () => {
 			} );
 		} );
 		describe( 'with non pure-component children ', () => {
-			test( 're-renders all Provider tree on Provider parent prop change', async () => {
+			test( 'only re-renders Provider children affected by the Provider parent prop change', async () => {
 				const { renderCount } = perf( React );
 				render( <AppNormal /> );
 				let baseRenderCount;
@@ -212,14 +212,14 @@ describe( 'ReactObservableContext', () => {
 				fireEvent.keyUp( screen.getByLabelText( 'Type:', { key: 'A', code: 'KeyA' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
-					expect( netCount.PriceSticker ).toBe( 2 ); // unaffected: no use for productType data
-					expect( netCount.ProductDescription ).toBe( 3 );
-					expect( netCount.Editor ).toBe( 2 ); // unaffected: no use for productType data
-					expect( netCount.TallyDisplay ).toBe( 3 );
+					expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
+					expect( netCount.ProductDescription ).toBe( 1 );
+					expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for productType data
+					expect( netCount.TallyDisplay ).toBe( 1 );
 				});
 				cleanupPerfTest();
 			} );
-			test( 're-renders all Provider tree on Provider parent state update', async () => {
+			test( 'oonly re-renders parts of the Provider tree directly affected by the Provider parent state update', async () => {
 				const { renderCount } = perf( React );
 				render( <AppNormal /> );
 				let baseRenderCount;
@@ -227,10 +227,10 @@ describe( 'ReactObservableContext', () => {
 				fireEvent.keyUp( screen.getByLabelText( '$', { key: '5', code: 'Key5' } ) );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
-					expect( netCount.PriceSticker ).toBe( 2 );
-					expect( netCount.ProductDescription ).toBe( 1 ); // unaffected: no use for price data
-					expect( netCount.Editor ).toBe( 1 ); // unaffected: no use for price data
-					expect( netCount.TallyDisplay ).toBe( 2 );
+					expect( netCount.PriceSticker ).toBe( 1 );
+					expect( netCount.ProductDescription ).toBe( 0 ); // unaffected: no use for price data
+					expect( netCount.Editor ).toBe( 0 ); // unaffected: no use for price data
+					expect( netCount.TallyDisplay ).toBe( 1 );
 				});
 				cleanupPerfTest();
 			} );

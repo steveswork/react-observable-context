@@ -1,5 +1,8 @@
 import React, {
+	Children,
+	cloneElement,
 	createContext as _createContext,
+	memo,
 	useCallback,
 	useContext as _useContext,
 	useEffect,
@@ -11,6 +14,8 @@ import React, {
 import clonedeep from 'lodash.clonedeep';
 import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
+import isEqual from 'lodash.isequal';
+import omit from 'lodash.omit';
 
 export class UsageError extends Error {}
 
@@ -106,11 +111,56 @@ const usePrehooksRef = prehooks => {
 	return prehooksRef;
 };
 
+/** @type {FC<{child: ReactNode}>} */
+const ChildMemo = (() => {
+	const useNodeMemo = node => {
+		const nodeRef = useRef( node );
+		if( !isEqual(
+			omit( nodeRef.current, '_owner' ),
+			omit( node, '_owner' )
+		) ) { nodeRef.current = node }
+		return nodeRef.current;
+	};
+	const ChildMemo = memo(({ child }) => child );
+	ChildMemo.displayName = 'ObservableContext.Provider.Internal.Guardian.ChildMemo';
+	const Guardian = ({ child }) => ( <ChildMemo child={ useNodeMemo( child ) } /> );
+	Guardian.displayName = 'ObservableContext.Provider.Internal.Guardian';
+	return Guardian;
+})();
+
+/** @type {(children: ReactNode) => ReactNode} */
+const memoizeImmediateChildTree = children => Children.map( children, child => {
+	if( typeof child.type === 'object' && 'compare' in child.type ) { return child }
+	if( child.props?.children ) {
+		child = cloneElement(
+			child,
+			omit( child.props, 'children' ),
+			memoizeImmediateChildTree( child.props.children )
+		);
+	}
+	return ( <ChildMemo child={ child } /> );
+} );
+
+/**
+* @type {FC<{
+* 		children?: ReactNode,
+* 		context: ObservableContext<T>,
+* 		value: Store<T>
+* }>}
+* @template {State} T
+*/
+const ProviderInternal = ({ children, context: StoreContext, value }) => (
+	<StoreContext.Provider value={ value }>
+		{ memoizeImmediateChildTree( children ) }
+	</StoreContext.Provider>
+);
+ProviderInternal.displayName = 'ObservableContext.Provider.Internal';
+
 /**
  * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
  *
- * @type {React.FC<{
- * 		children?: React.ReactNode,
+ * @type {FC<{
+ * 		children?: ReactNode,
  * 		context: ObservableContext<T>,
  * 		prehooks?: Prehooks<T>
  * 		value: PartialState<T>
@@ -172,15 +222,18 @@ export const Provider = ({
 	}));
 
 	return (
-		<StoreContext.Provider value={ store }>
+		<ProviderInternal
+			context={ StoreContext }
+			value={ store }
+		>
 			{ children }
-		</StoreContext.Provider>
+		</ProviderInternal>
 	);
 };
 Provider.displayName = 'ObservableContext.Provider';
 
 /**
- * @typedef {React.Context<Store<T>>} ObservableContext
+ * @typedef {Context<Store<T>>} ObservableContext
  * @template {State} T
  */
 
@@ -225,3 +278,15 @@ Provider.displayName = 'ObservableContext.Provider';
  */
 
 /** @typedef {VoidFunction} Unsubscribe */
+
+/** @typedef {import("react").ReactNode} ReactNode */
+
+/**
+ * @typedef {import("react").FC<P>} FC
+ * @template [P={}]
+ */
+
+/**
+ * @typedef {import("react").Context<T>} Context
+ * @template T
+ */
