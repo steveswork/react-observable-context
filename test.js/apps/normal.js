@@ -5,13 +5,24 @@ import React, {
 	useState
 } from 'react';
 
-import { Provider, createContext, useContext } from '../../src';
+import { createContext, Provider, useContext } from '../../src';
 
 export const ObservableContext = createContext();
+export const ObservableContextProvider = ({ children, prehooks, value }) => (
+	<Provider
+		context={ ObservableContext }
+		prehooks={ prehooks }
+		value={ value }
+	>
+		{ children }
+	</Provider>
+);
+ObservableContextProvider.displayName = 'ObservableContextProvider';
+export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
 
 /** @type {React.FC<void>} */
 const Reset = () => {
-	const { resetState } = useContext( ObservableContext );
+	const { resetState } = useObservableContext();
 
 	useEffect(() => console.log( 'Reset component rendered.....' ));
 
@@ -24,7 +35,7 @@ const TALLY_DISPLAY_CONTEXT_KEYS = [ 'color', 'price', 'type' ];
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { getState } = useContext( ObservableContext, TALLY_DISPLAY_CONTEXT_KEYS );
+	const { getState } = useObservableContext( TALLY_DISPLAY_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
@@ -48,7 +59,7 @@ TallyDisplay.displayName = 'TallyDisplay';
 /** @type {React.FC<void>} */
 export const Editor = () => {
 
-	const { setState } = useContext( ObservableContext );
+	const { setState } = useObservableContext();
 
 	const priceInputRef = useRef();
 	const colorInputRef = useRef();
@@ -94,7 +105,7 @@ const PRODUCT_DESC_CONTEXT_KEYS = [ 'color', 'type' ];
 /** @type {React.FC<void>} */
 export const ProductDescription = () => {
 
-	const store = useContext( ObservableContext, PRODUCT_DESC_CONTEXT_KEYS );
+	const store = useObservableContext( PRODUCT_DESC_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 
@@ -114,7 +125,7 @@ const PRICE_STICKER_CONTEXT_KEYS = [ 'price' ];
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const { getState } = useContext( ObservableContext, PRICE_STICKER_CONTEXT_KEYS );
+	const { getState } = useObservableContext( PRICE_STICKER_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
@@ -148,11 +159,7 @@ export const Product = ({ prehooks = undefined, type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<Provider
-				context={ ObservableContext }
-				prehooks={ prehooks }
-				value={ state }
-			>
+			<ObservableContextProvider prehooks={ prehooks } value={ state }>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,
@@ -163,7 +170,7 @@ export const Product = ({ prehooks = undefined, type }) => {
 				</div>
 				<ProductDescription />
 				<PriceSticker />
-			</Provider>
+			</ObservableContextProvider>
 		</div>
 	);
 };
