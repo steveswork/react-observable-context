@@ -4,7 +4,9 @@ A context bearing an observable consumer store. State changes within the store's
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
-_**Recommendation:**_ Wrap all components calling this package's ***useContext*** function in **React::memo**. This will protect such component and its descendants from unrelated cascading render operations. 
+_**Recommendation:**_ Wrap all components calling this package's ***useContext*** function in **React::memo**. This will protect such components and their descendants from unrelated cascading render operations. 
+
+<hr />
 
 <h4><u>Install</u></h4>
 
@@ -50,34 +52,206 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>context.js</u></i>
 
-    import { createContext } from '@webkrafters/react-observable-context';
-	const ObservableContext = createContext();
-    export default ObservableContext;
+    import React from 'react';
 
-<i><u>reset.js</u></i>
+	import {
+		createContext,
+		Provider,
+		useContext
+	} from '@webkrafters/react-observable-context';
+	
+	export const ObservableContext = createContext();
+
+	export const ObservableContextProvider = ({ children, prehooks, value }) => (
+		<Provider
+			context={ ObservableContext }
+			prehooks={ prehooks }
+			value={ value }
+		>
+			{ children }
+		</Provider>
+	);
+	ObservableContextProvider.displayName = 'ObservableContextProvider';
+
+	export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
+
+	export default ObservableContext;
+
+<i><u>index.js</i></b>
+
+    import React from 'react';
+    import ReactDOM from 'react-dom';
+    import App from './app';
+    ReactDOM.render(<App />, document.getElementById('root'));
+
+<i><u>app.js</u></i>
+
+    import React, { useCallback, useState } from 'react';
+	import Product from './product';
+	const productUpdateHooks = {
+		resetState: ( ...args ) => {
+			console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
+			return true;
+		},
+		setState: ( ...args ) => {
+			console.log( 'setting state with >>>> ', JSON.stringify( args ) );
+			return true;
+		}
+	};
+	const App = () => {
+		const [ productType, setProductType ] = useState( 'Calculator' );
+		const updateType = useCallback( e => setProductType( e.target.value ), [] );
+		return (
+			<div className="App">
+				<h1>Demo</h1>
+				<h2>A contrived product app.</h2>
+				<div style={{ marginBottom: 10 }}>
+					<label>Type: <input onKeyUp={ updateType } placeholder="override product type here..." /></label>
+				</div>
+				<Product
+					type={ productType }
+					updateHooks={ productUpdateHooks }
+				/>
+			</div>
+		);
+	};
+	App.displayName = 'App';
+	export default App;
+
+<i><u>product.js</u></i>
+
+	import React, { useCallback, useEffect, useState } from 'react';
+	import { ObservableContextProvider } from './context';
+	import Editor from './editor';
+	import PriceSticker from './price-sticker';
+	import ProductDescription from './product-description';
+	import TallyDisplay from './tally-display';
+	const Product = ({ type, updateHooks }) => {
+		const [ state, setState ] = useState(() => ({
+			color: 'Burgundy',
+			price: 22.5,
+			type
+		}));
+		useEffect(() => {
+			setState({ type }); // use this to update only the changed state value
+			// setState({ ...state, type }); // this will override the context internal state for these values 
+		}, [ type ]);
+		const overridePricing = useCallback( e => setState({ price: Number( e.target.value ) }), [] );
+		return (
+			<div>
+				<div style={{ marginBottom: 10 }}>
+					<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..." /></label>
+				</div>
+				<ObservableContextProvider
+					prehooks={ updateHooks }
+					value={ state }
+				>
+					<div style={{
+						borderBottom: '1px solid #333',
+						marginBottom: 10,
+						paddingBottom: 5
+					}}>
+						<Editor />
+						<TallyDisplay />
+					</div>
+					<ProductDescription />
+					<PriceSticker />
+				</ObservableContextProvider>
+			</div>
+		);
+	};
+	Product.displayName = 'Product';
+	export default Product;
+
+<i><u>editor.js</u></i>
+
+    import React, { memo, useCallback, useEffect, useRef } from 'react';
+	import { useObservableContext } from './context';
+	const Editor = memo(() => {
+		const { setState } = useObservableContext();
+		const priceInputRef = useRef();
+		const colorInputRef = useRef();
+		const typeInputRef = useRef();
+		const updatePrice = useCallback(() => {
+			setState({ price: Number( priceInputRef.current.value ) });
+		}, []);
+		const updateColor = useCallback(() => {
+			setState({ color: colorInputRef.current.value });
+		}, []);
+		const updateType = useCallback(() => {
+			setState({ type: typeInputRef.current.value });
+		}, []);
+		useEffect(() => console.log( 'Editor component rendered.....' ));
+		return (
+			<fieldset style={{ margin: '10px 0' }}>
+				<legend>Editor</legend>
+				<div style={{ margin: '10px 0' }}>
+					<label>New Price: <input ref={ priceInputRef } /></label>
+					{ ' ' }
+					<button onClick={ updatePrice }>update price</button>
+				</div>
+				<div style={{ margin: '10px 0' }}>
+					<label>New Color: <input ref={ colorInputRef } /></label>
+					{ ' ' }
+					<button onClick={ updateColor }>update color</button>
+				</div>
+				<div style={{ margin: '10px 0' }}>
+					<label>New Type: <input ref={ typeInputRef } /></label>
+					{ ' ' }
+					<button onClick={ updateType }>update type</button>
+				</div>
+			</fieldset>
+		);
+	});
+	Editor.displayName = 'Editor';
+	export default Editor;
+
+<i><u>price-sticker.js</u></i>
 
     import React, { memo, useEffect } from 'react';
-	import { useContext } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
-	const Reset = memo(() => {
-		const { resetState } = useContext( ObservableContext );
-		useEffect(() => console.log( 'Reset component rendered.....' ));
-		return ( <button onClick={ resetState }>reset context</button> );
+	import { useObservableContext } from './context';
+	const CONTEXT_KEYS = [ 'price' ];
+	const PriceSticker = memo(() => {
+		const { getState } = useObservableContext( CONTEXT_KEYS );
+		useEffect(() => console.log( 'PriceSticker component rendered.....' ));
+		return (
+			<div style={{ fontSize: 36, fontWeight: 800 }}>
+				${ getState( s => s.price ).toFixed( 2 ) }
+			</div>
+		);
 	});
-	Reset.displayName = 'Reset';
-    export default Reset;
+	PriceSticker.displayName = 'PriceSticker';
+	export default PriceSticker;
+
+<i><u>product-description.js</u></i>
+
+    import React, { memo, useEffect } from 'react';
+	import { useObservableContext } from './context';
+	const CONTEXT_KEYS = [ 'color', 'type' ];
+	const ProductDescription = memo(() => {
+		const store = useObservableContext( CONTEXT_KEYS );
+		useEffect(() => console.log( 'ProductDescription component rendered.....' ));
+		const color = store.getState( s => s.color );
+		const type = store.getState( s => s.type );
+		return (
+			<div style={{ fontSize: 24 }}>
+				<strong>Description:</strong> { color } { type }
+			</div>
+		);
+	});
+	ProductDescription.displayName = 'ProductDescription';
+	export default ProductDescription;
 
 <i><u>tally-display.js</u></i>
 
     import React, { memo, useEffect } from 'react';
-	import { useContext } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
+	import { useObservableContext } from './context';
 	import Reset from './reset';
-    const CONTEXT_KEYS = [ 'color', 'price', 'type' ];
-    const TallyDisplay = memo(() => {
-	    const { getState } = useContext( ObservableContext, CONTEXT_KEYS );
-	    useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
-	    return (
+	const CONTEXT_KEYS = [ 'color', 'price', 'type' ];
+	const TallyDisplay = memo(() => {
+		const { getState } = useObservableContext( CONTEXT_KEYS );
+		useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
+		return (
 			<div>
 				<table>
 					<tbody>
@@ -91,176 +265,22 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 				</div>
 			</div>
 		);
-    });
-    TallyDisplay.displayName = 'TallyDisplay';
-    export default TallyDisplay;
-
-<i><u>editor.js</u></i>
-
-    import React, { memo, useCallback, useEffect, useRef } from 'react';
-	import { useContext } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
-    const Editor = memo(() => {
-	    const { setState } = useContext( ObservableContext );
-	    const priceInputRef = useRef();
-	    const colorInputRef = useRef();
-	    const typeInputRef = useRef();
-	    const updatePrice = useCallback(() => {
-		    setState({ price: Number( priceInputRef.current.value ) });
-	    }, []);
-	    const updateColor = useCallback(() => {
-		    setState({ color: colorInputRef.current.value });
-	    }, []);
-	    const updateType = useCallback(() => {
-		    setState({ type: typeInputRef.current.value });
-	    }, []);
-	    useEffect(() => console.log( 'Editor component rendered.....' ));
-	    return (
-		    <fieldset style={{ margin: '10px 0' }}>
-			    <legend>Editor</legend>
-			    <div style={{ margin: '10px 0' }}>
-				    <label>New Price: <input ref={ priceInputRef } /></label>
-				    { ' ' }
-				    <button onClick={ updatePrice }>update price</button>
-			    </div>
-			    <div style={{ margin: '10px 0' }}>
-				    <label>New Color: <input ref={ colorInputRef } /></label>
-				    { ' ' }
-				    <button onClick={ updateColor }>update color</button>
-			    </div>
-			    <div style={{ margin: '10px 0' }}>
-				    <label>New Type: <input ref={ typeInputRef } /></label>
-				    { ' ' }
-				    <button onClick={ updateType }>update type</button>
-			    </div>
-		    </fieldset>
-	    );
 	});
-    Editor.displayName = 'Editor';
-    export default Editor;
+	TallyDisplay.displayName = 'TallyDisplay';
+	export default TallyDisplay;
 
-<i><u>product-description.js</u></i>
-
-    import React, { memo, useEffect } from 'react';
-	import { useContext } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
-	const CONTEXT_KEYS = [ 'color', 'type' ];
-    const ProductDescription = memo(() => {
-	    const store = useContext( ObservableContext, CONTEXT_KEYS );
-	    useEffect(() => console.log( 'ProductDescription component rendered.....' ));
-	    const color = store.getState( s => s.color );
-	    const type = store.getState( s => s.type );
-	    return (
-		    <div style={{ fontSize: 24 }}>
-			    <strong>Description:</strong> { color } { type }
-		    </div>
-	    );
-    });
-    ProductDescription.displayName = 'ProductDescription';
-    export default ProductDescription;
-
-<i><u>price-sticker.js</u></i>
+<i><u>reset.js</u></i>
 
     import React, { memo, useEffect } from 'react';
-	import { useContext } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
-	const CONTEXT_KEYS = [ 'price' ];
-    const PriceSticker = memo(() => {
-	    const { getState } = useContext( ObservableContext, CONTEXT_KEYS );
-	    useEffect(() => console.log( 'PriceSticker component rendered.....' ));
-	    return (
-		    <div style={{ fontSize: 36, fontWeight: 800 }}>
-			    ${ getState( s => s.price ).toFixed( 2 ) }
-		    </div>
-	    );
-    });
-    PriceSticker.displayName = 'PriceSticker';
-    export default PriceSticker;
+	import { useObservableContext } from './context';
+	const Reset = memo(() => {
+		const { resetState } = useObservableContext();
+		useEffect(() => console.log( 'Reset component rendered.....' ));
+		return ( <button onClick={ resetState }>reset context</button> );
+	});
+	Reset.displayName = 'Reset';
+	export default Reset;
 
-<i><u>product.js</u></i>
-
-    import React, { useCallback, useEffect, useState } from 'react';
-    import { Provider } from '@webkrafters/react-observable-context';
-	import ObservableContext from './context';
-    import Editor from './editor';
-    import PriceSticker from './price-sticker';
-    import ProductDescription from './product-description';
-    import TallyDisplay from './tally-display';
-    const Product = ({ prehooks = undefined, type }) => {
-	    const [ state, setState ] = useState(() => ({
-		    color: 'Burgundy',
-		    price: 22.5,
-		    type
-	    }));
-	    useEffect(() => {
-		    setState({ type }); // use this to update only the changed state
-		    // setState({ ...state, type }); // this will reset the context internal state
-	    }, [ type ]);
-	    const overridePricing = useCallback( e => setState({ price: Number( e.target.value ) }), [] );
-	    return (
-		    <div>
-			    <div style={{ marginBottom: 10 }}>
-				    <label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
-			    </div>
-				<Provider
-					context={ ObservableContext }
-					prehooks={ prehooks }
-					value={ state }
-				>
-				    <div style={{
-					    borderBottom: '1px solid #333',
-					    marginBottom: 10,
-					    paddingBottom: 5
-				    }}>
-					    <Editor />
-					    <TallyDisplay />
-				    </div>
-				    <ProductDescription />
-				    <PriceSticker />
-			    </Provider>
-		    </div>
-	    );
-    };
-    Product.displayName = 'Product';
-    export default Product;
-
-<i><u>app.js</u></i>
-
-    import React, { useCallback, useState } from 'react';
-    import Product from './product';
-	const prehooks = {
-		resetState: ( ...args ) => {
-			console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
-			return true;
-		},
-		setState: ( ...args ) => {
-			console.log( 'setting state with >>>> ', JSON.stringify( args ) );
-			return true;
-		}
-	};
-    const App = () => {
-	    const [ productType, setProductType ] = useState( 'Calculator' );
-	    const updateType = useCallback( e => setProductType( e.target.value ), [] );
-	    return (
-		    <div className="App">
-			    <h1>Demo</h1>
-			    <h2>A contrived product app.</h2>
-			    <div style={{ marginBottom: 10 }}>
-				    <label>Type: <input onKeyUp={ updateType } placeholder="override product type here..." /></label>
-			    </div>
-			    <Product prehooks={ prehooks } type={ productType } />
-		    </div>
-	    );
-    };
-    App.displayName = 'App';
-    export default App;
-
-<i><u>index.js</i></b>
-
-    import React from 'react';
-    import ReactDOM from 'react-dom';
-    import App from './app';
-    ReactDOM.render(<App />, document.getElementById('root'));
 
 ## License
 
