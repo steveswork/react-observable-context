@@ -78,5 +78,5 @@
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "2.1.1"
+  "version": "2.1.2"
 }

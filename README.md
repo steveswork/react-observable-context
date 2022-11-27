@@ -164,7 +164,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
     import React, { memo, useEffect } from 'react';
 	import { useContext } from '@webkrafters/react-observable-context';
 	import ObservableContext from './context';
-	const CONTEXT_KEYS  = [ 'price' ];
+	const CONTEXT_KEYS = [ 'price' ];
     const PriceSticker = memo(() => {
 	    const { getState } = useContext( ObservableContext, CONTEXT_KEYS );
 	    useEffect(() => console.log( 'PriceSticker component rendered.....' ));
@@ -226,7 +226,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 <i><u>app.js</u></i>
 
-    import React, { useCallback, useMemo, useState } from 'react';
+    import React, { useCallback, useState } from 'react';
     import Product from './product';
 	const prehooks = {
 		resetState: ( ...args ) => {
