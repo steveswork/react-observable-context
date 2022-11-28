@@ -15,6 +15,7 @@ import clonedeep from 'lodash.clonedeep';
 import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
+import isPlainObject from 'lodash.isplainobject';
 import omit from 'lodash.omit';
 
 export class UsageError extends Error {}
@@ -81,25 +82,57 @@ export const useContext = ( context, watchedKeys = [] ) => {
  */
 const defaultPrehooks = Object.freeze({});
 
-/**
- * @param {T} state
- * @param {PartialState<T>} newState
- * @param {Listener<T>} onStateChange
- * @template {State} T
- */
-const _setState = ( state, newState, onStateChange ) => {
-	/** @type {PartialState<T>} */
-	const newChanges = {};
-	/** @type {PartialState<T>} */
-	const replacedValue = {};
-	for( const k in newState ) {
-		if( state[ k ] === newState[ k ] ) { continue }
-		replacedValue[ k ] = state[ k ];
-		state[ k ] = newState[ k ];
-		newChanges[ k ] = newState[ k ];
-	}
-	!isEmpty( newChanges ) && onStateChange( newChanges, replacedValue );
-};
+const _setState = (() => {
+	const setAtomic = ( state, newState, changed, replaced, stateKey ) => {
+		if( isEqual( state[ stateKey ], newState[ stateKey ] ) ) { return }
+		const isArrayNewState = Array.isArray( newState[ stateKey ] );
+		if( Array.isArray( state[ stateKey ] ) && isArrayNewState ) {
+			return setArray( state, newState, changed, replaced, stateKey );
+		}
+		const isPlainObjectNewState = isPlainObject( newState[ stateKey ] );
+		if( isPlainObject( state[ stateKey ] ) && isPlainObjectNewState ) {
+			return setPlainObject( state, newState, changed, replaced, stateKey )
+		}
+		replaced[ stateKey ] = state[ stateKey ];
+		state[ stateKey ] = isArrayNewState || isPlainObjectNewState
+			? clonedeep( newState[ stateKey ] )
+			: newState[ stateKey ];
+		changed[ stateKey ] = newState[ stateKey ];
+	};
+	const setArray = ( state, newState, changed, replaced, rootKey ) => {
+		changed[ rootKey ] = {};
+		replaced[ rootKey ] = {};
+		for( let i = 0, len = newState[ rootKey ].length; i < len; i++ ) {
+			setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], i );
+		}
+	};
+	const setPlainObject = ( state, newState, changed, replaced, rootKey ) => {
+		changed[ rootKey ] = {};
+		replaced[ rootKey ] = {};
+		for( const k in newState[ rootKey ] ) {
+			setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], k );
+		}
+	};
+	const set = ( state, newState, changed = {}, replaced = {} ) => {
+		for( const k in newState ) {
+			setAtomic( state, newState, changed, replaced, k );
+		}
+	};
+	/**
+	 * @param {T} state
+	 * @param {PartialState<T>} newState
+	 * @param {Listener<T>} onStateChange
+	 * @template {State} T
+	 */
+	return ( state, newState, onStateChange ) => {
+		/** @type {PartialState<T>} */
+		const newChanges = {};
+		/** @type {PartialState<T>} */
+		const replacedValue = {};
+		set( state, newState, newChanges, replacedValue );
+		!isEmpty( newChanges ) && onStateChange( newChanges, replacedValue );
+	};
+})();
 
 /**
  * @param {Prehooks<T>} prehooks
@@ -188,7 +221,12 @@ export const Provider = ({
 	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
 
 	/** @type {Store<T>["getState"]} */
-	const getState = useCallback(( selector = defaultSelector ) => selector( state ), []);
+	const getState = useCallback(( selector = defaultSelector ) => {
+		const slice = selector( state );
+		return typeof slice === 'object'
+			? clonedeep( slice )
+			: slice;
+	}, []);
 
 	/** @type {Store<T>["resetState"]} */
 	const resetState = useCallback(() => {

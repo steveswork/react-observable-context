@@ -4,7 +4,7 @@ A context bearing an observable consumer store. State changes within the store's
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
-_**Recommendation:**_ Wrap all components calling this package's ***useContext*** function in **React::memo**. This will protect such components and their descendants from unrelated cascading render operations. 
+_**Recommendation:**_ For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations. ***Exempt:*** certain components such as those wrapped in the `React-Redux::connect()` HOC. Such HOC provide similar protection to wrapped components and their descendants. 
 
 <hr />
 

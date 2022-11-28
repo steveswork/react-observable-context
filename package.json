@@ -12,6 +12,7 @@
     "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
+    "lodash.isplainobject": "^4.0.6",
     "lodash.omit": "^4.5.0",
     "react": "^18.2.0"
   },
@@ -78,5 +79,5 @@
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "2.1.3"
+  "version": "2.1.4-rc.0"
 }
