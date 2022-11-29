@@ -149,7 +149,7 @@ export const Product = ({ prehooks = undefined, type }) => {
 
 	useEffect(() => {
 		setState({ type }); // use this to update only the changed state
-		// setState({ ...state, type }); // this will reset the context internal state
+		// setState({ ...state, type }); // this will override the context internal state for these values
 	}, [ type ]);
 
 	const overridePricing = useCallback( e => setState({ price: Number( e.target.value ) }), [] );

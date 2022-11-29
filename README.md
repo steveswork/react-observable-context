@@ -4,11 +4,13 @@ A context bearing an observable consumer store. State changes within the store's
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
-_**Recommendation:**_ For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations. ***Exempt:*** certain components such as those wrapped in the `React-Redux::connect()` HOC. Such HOC provide similar protection to wrapped components and their descendants. 
+_**Recommendation:**_ For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations.
+
+***Exempt*** from the recommendation are certain components such as those wrapped in the `React-Redux::connect()` Higher Order Component (HOC). Such HOC provides similar cascade-render protections to wrapped components and their descendants. 
 
 <hr />
 
-<h4><u>Install</u></h4>
+<h3><u>Install</u></h3>
 
 npm i -S @webkrafters/react-observable-context
 
@@ -16,13 +18,15 @@ npm install --save @webkrafters/react-observable-context
 
 ## API
 
-The React-Observable-Context package exports **3** modules namely: the **createContext** method, the **useContext** hook and the **Provider** component.
+The React-Observable-Context package exports **4** modules namely: the **createContext** method, the **useContext** hook, the **Provider** component and the **UsageError** class.
 
 * **createContext** is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
 
 * **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
 
 * **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
+
+* **UsageError** class is the Error type reported for attempts to access this context's store outside of its Provider component tree.
 
 ***<u>Note:</u>*** the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
 
