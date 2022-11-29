@@ -83,6 +83,10 @@ export const useContext = ( context, watchedKeys = [] ) => {
 const defaultPrehooks = Object.freeze({});
 
 const _setState = (() => {
+	const initDiff = ( propKey, changed, replaced ) => {
+		changed[ propKey ] = {};
+		replaced[ propKey ] = {};
+	};
 	const setAtomic = ( state, newState, changed, replaced, stateKey ) => {
 		if( isEqual( state[ stateKey ], newState[ stateKey ] ) ) { return }
 		const isArrayNewState = Array.isArray( newState[ stateKey ] );
@@ -100,18 +104,14 @@ const _setState = (() => {
 		changed[ stateKey ] = newState[ stateKey ];
 	};
 	const setArray = ( state, newState, changed, replaced, rootKey ) => {
-		changed[ rootKey ] = {};
-		replaced[ rootKey ] = {};
+		initDiff( rootKey, changed, replaced );
 		for( let i = 0, len = newState[ rootKey ].length; i < len; i++ ) {
 			setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], i );
 		}
 	};
 	const setPlainObject = ( state, newState, changed, replaced, rootKey ) => {
-		changed[ rootKey ] = {};
-		replaced[ rootKey ] = {};
-		for( const k in newState[ rootKey ] ) {
-			setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], k );
-		}
+		initDiff( rootKey, changed, replaced );
+		set( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ] );
 	};
 	const set = ( state, newState, changed = {}, replaced = {} ) => {
 		for( const k in newState ) {
