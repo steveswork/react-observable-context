@@ -1,6 +1,18 @@
 ﻿# React-Observable-Context
 
-A context bearing an observable consumer store. State changes within the store's internal state are only broadcasted to components subscribed to the store. In this way, the `React-Observable-Context` prevents repeated automatic re-renderings of entire component trees resulting from ***context*** state changes.
+A context bearing an observable consumer store.
+
+**Name:** React-Observable-Context
+
+**Usage:** Please see [Usage](#usage) section
+
+**Install:**\
+npm i -S @webkrafters/react-observable-context\
+npm install --save @webkrafters/react-observable-context
+
+# Intro
+
+State changes within the store's internal state are only broadcasted to components subscribed to the store. In this way, the `React-Observable-Context` prevents repeated automatic re-renderings of entire component trees resulting from ***context*** state changes.
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
@@ -8,19 +20,11 @@ _**Recommendation:**_ For optimum performance, consider wrapping in **React::mem
 
 ***Exempt*** from the recommendation are certain components such as those wrapped in the `React-Redux::connect()` Higher Order Component (HOC). Such HOC provides similar cascade-render protections to wrapped components and their descendants. 
 
-<hr />
-
-<h3><u>Install</u></h3>
-
-npm i -S @webkrafters/react-observable-context
-
-npm install --save @webkrafters/react-observable-context
-
-## API
+# API
 
 The React-Observable-Context package exports **4** modules namely: the **createContext** method, the **useContext** hook, the **Provider** component and the **UsageError** class.
 
-* **createContext** is a zero-parameter funtion returning a store-bearing context. Pass the context to the React::useContext() parameter to obtain the context's `store`.
+* **createContext** is a zero-parameter function returning a store-bearing context. Pass the context to the useContext() parameter to obtain the context's `store`.
 
 * **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
 
@@ -30,7 +34,7 @@ The React-Observable-Context package exports **4** modules namely: the **createC
 
 ***<u>Note:</u>*** the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
 
-### The Store
+## The Store
 
 The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
@@ -44,7 +48,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 
-### Prehooks
+## Prehooks
 
  Prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates.
 
@@ -58,9 +62,9 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 ***<u>Use case:</u>*** prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates.
 
-## Usage
+# Usage
 
-<i><u>context.js</u></i>
+### <u>*context.js*</u>
 
     import React from 'react';
 
@@ -87,14 +91,14 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 	export default ObservableContext;
 
-<i><u>index.js</u></i>
+### <u>*index.js*</u>
 
     import React from 'react';
     import ReactDOM from 'react-dom';
     import App from './app';
     ReactDOM.render(<App />, document.getElementById('root'));
 
-<i><u>app.js</u></i>
+### <u>*app.js*</u>
 
     import React, { useCallback, useState } from 'react';
 	import Product from './product';
@@ -128,7 +132,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	App.displayName = 'App';
 	export default App;
 
-<i><u>product.js</u></i>
+### <u>*product.js*</u>
 
 	import React, { useCallback, useEffect, useState } from 'react';
 	import { ObservableContextProvider } from './context';
@@ -173,7 +177,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	Product.displayName = 'Product';
 	export default Product;
 
-<i><u>editor.js</u></i>
+### <u>*editor.js*</u>
 
     import React, { memo, useCallback, useEffect, useRef } from 'react';
 	import { useObservableContext } from './context';
@@ -216,7 +220,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	Editor.displayName = 'Editor';
 	export default Editor;
 
-<i><u>price-sticker.js</u></i>
+### <u>*price-sticker.js*</u>
 
     import React, { memo, useEffect } from 'react';
 	import { useObservableContext } from './context';
@@ -233,7 +237,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	PriceSticker.displayName = 'PriceSticker';
 	export default PriceSticker;
 
-<i><u>product-description.js</u></i>
+### <u>*product-description.js*</u>
 
     import React, { memo, useEffect } from 'react';
 	import { useObservableContext } from './context';
@@ -252,7 +256,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	ProductDescription.displayName = 'ProductDescription';
 	export default ProductDescription;
 
-<i><u>tally-display.js</u></i>
+### <u>*tally-display.js*</u>
 
     import React, { memo, useEffect } from 'react';
 	import { useObservableContext } from './context';
@@ -279,7 +283,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	TallyDisplay.displayName = 'TallyDisplay';
 	export default TallyDisplay;
 
-<i><u>reset.js</u></i>
+### <u>*reset.js*</u>
 
     import React, { memo, useEffect } from 'react';
 	import { useObservableContext } from './context';
@@ -292,6 +296,6 @@ The context's `store` exposes **4** methods for interacting with the context's i
 	export default Reset;
 
 
-## License
+# License
 
 MIT
