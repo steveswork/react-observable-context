@@ -38,19 +38,25 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
-* **setState**: (changes: PartialState\<State\>) => void // sets only new/changed top level properties.
+* **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
+***Do this:*** `setState({stateKey0: changes0[, ...]});`\
+***Not this:*** `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 
 ### Prehooks
 
-The context's store update operation adheres to **2** user supplied prehooks when present. Otherwise, the update operation proceeds normally to completion. They are named **resetState** and **setState** after the store update methods which utilize them.
+ Prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates.
 
-* **resetState**: (state: {current: State, original: State}) => boolean
+ The context store **2** update operations each adhere to its own user specified prehook when present. Otherwise, the update operation proceeds normally to completion. Thus, there are **2** prehooks named **resetState** and **setState** - after the store update methods they support.
+ 
+ Each prehook returns a **boolean** value (`true` to continue AND `false` to abort the update operation). The prehook may modify (i.e. sanitize, transform, transpose) the argument to accurately reflect the intended update value. This is done by mutating part of the argument which holds the next `nextUpdate` values.
 
-* **setState**: (newChanges: PartialState\<State\>) => boolean
+* **resetState**: (state: {current: State, original: State}) => boolean // ***`state.original`*** holds the `nextUpdate` values.
 
-***<u>Use case:</u>*** prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates. The prehook returns a **boolean** value (`true` to continue AND `false` to abort the update operation). The prehook may mutate (i.e. sanitize, transform, transpose) its argument values to accurately reflect the intended update value.
+* **setState**: (newChanges: PartialState\<State\>) => boolean // ***`newChanges`*** holds the `nextUpdate` values.
+
+***<u>Use case:</u>*** prehooks provide a central place for sanitizing, modifying, transforming, validating etc. all related incoming state updates.
 
 ## Usage
 
@@ -81,7 +87,7 @@ The context's store update operation adheres to **2** user supplied prehooks whe
 
 	export default ObservableContext;
 
-<i><u>index.js</i></b>
+<i><u>index.js</u></i>
 
     import React from 'react';
     import ReactDOM from 'react-dom';
