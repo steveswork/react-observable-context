@@ -97,7 +97,9 @@ const _setState = (() => {
 		if( isPlainObject( state[ stateKey ] ) && isPlainObjectNewState ) {
 			return setPlainObject( state, newState, changed, replaced, stateKey )
 		}
-		replaced[ stateKey ] = state[ stateKey ];
+		if( stateKey in state ) {
+			replaced[ stateKey ] = state[ stateKey ];
+		}
 		state[ stateKey ] = isArrayNewState || isPlainObjectNewState
 			? clonedeep( newState[ stateKey ] )
 			: newState[ stateKey ];
