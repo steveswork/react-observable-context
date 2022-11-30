@@ -1,6 +1,6 @@
 ﻿# React-Observable-Context
 
-A context bearing an observable consumer store.
+Only re-renders subscribing components on context state change. A subscribing component decides which context state properties' change trigger its update.
 
 **Name:** React-Observable-Context
 
@@ -12,11 +12,11 @@ npm install --save @webkrafters/react-observable-context
 
 # Intro
 
-State changes within the store's internal state are only broadcasted to components subscribed to the store. In this way, the `React-Observable-Context` prevents repeated automatic re-renderings of entire component trees resulting from ***context*** state changes.
+A context bearing an observable consumer [store](#store). State changes within the store's internal state are only broadcasted to components subscribed to the store. In this way, the `React-Observable-Context` prevents repeated automatic re-renderings of entire component trees resulting from ***context*** state changes.
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
-_**Recommendation:**_ For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations.
+***Recommendation:*** For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations.
 
 ***Exempt*** from the recommendation are certain components such as those wrapped in the `React-Redux::connect()` Higher Order Component (HOC). Such HOC provides similar cascade-render protections to wrapped components and their descendants. 
 
@@ -24,17 +24,17 @@ _**Recommendation:**_ For optimum performance, consider wrapping in **React::mem
 
 The React-Observable-Context package exports **4** modules namely: the **createContext** method, the **useContext** hook, the **Provider** component and the **UsageError** class.
 
-* **createContext** is a zero-parameter function returning a store-bearing context. Pass the context to the useContext() parameter to obtain the context's `store`.
+* **createContext** is a zero-parameter function returning a store-bearing context. Pass the context as a `context` parameter to the [useContext()](#usecontext) to obtain the context's [store](#store).
 
-* **useContext** is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
+* <b id="usecontext">useContext</b> is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
 
-* **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the prehooks section below)</i>.
+* **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the [prehooks](#prehooks) section below)</i>.
 
 * **UsageError** class is the Error type reported for attempts to access this context's store outside of its Provider component tree.
 
 ***<u>Note:</u>*** the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
 
-## The Store
+## Store
 
 The context's `store` exposes **4** methods for interacting with the context's internal state namely:
 
@@ -43,8 +43,8 @@ The context's `store` exposes **4** methods for interacting with the context's i
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
 * **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
-***Do this:*** `setState({stateKey0: changes0[, ...]});`\
-***Not this:*** `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
+***Do this:*** <code style="color:#080">setState({stateKey0: changes0[, ...]});</code>\
+***Not this:*** <code style="color:#800">setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});</code>
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 
