@@ -45,8 +45,8 @@ The context's `store` exposes **4** methods for interacting with the context's i
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
 * **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
-$\textcolor{#080}{\textbf{\textit{Do\ this:}}}$ `setState({stateKey0: changes0[, ...]});`\
-$\textcolor{#800}{\textbf{\textit{Not\ this:}}}$ `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
+***Do this:*** `setState({stateKey0: changes0[, ...]});`\
+***Not this:*** `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 
