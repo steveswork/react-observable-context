@@ -1,6 +1,8 @@
 ﻿# React-Observable-Context
 
-Only re-renders subscribing components on context state change. A subscribing component decides which context state properties' change trigger its update.
+A context bearing an observable consumer [store](#store).\
+Only re-renders subscribing components on context state change.\
+Subscribing component decides which context state properties' change trigger its update.
 
 **Name:** React-Observable-Context
 
@@ -43,8 +45,8 @@ The context's `store` exposes **4** methods for interacting with the context's i
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
 * **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
-***Do this:*** <code style="color:#080">setState({stateKey0: changes0[, ...]});</code>\
-***Not this:*** <code style="color:#800">setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});</code>
+$\textcolor{#080}{\textbf{\textit{Do\ this:}}}$ `setState({stateKey0: changes0[, ...]});`\
+$\textcolor{#800}{\textbf{\textit{Not\ this:}}}$ `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
 
 * **subscribe**: (listener: (newValue: PartialState\<State\>, oldValue: PartialState\<State\>) => void) => ***UnsubscribeFunction***
 
