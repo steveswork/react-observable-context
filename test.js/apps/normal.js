@@ -5,19 +5,9 @@ import React, {
 	useState
 } from 'react';
 
-import { createContext, Provider, useContext } from '../../src';
+import { createContext, useContext } from '../../src';
 
 export const ObservableContext = createContext();
-export const ObservableContextProvider = ({ children, prehooks, value }) => (
-	<Provider
-		context={ ObservableContext }
-		prehooks={ prehooks }
-		value={ value }
-	>
-		{ children }
-	</Provider>
-);
-ObservableContextProvider.displayName = 'ObservableContextProvider';
 export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
 
 /** @type {React.FC<void>} */
@@ -159,7 +149,7 @@ export const Product = ({ prehooks = undefined, type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<ObservableContextProvider prehooks={ prehooks } value={ state }>
+			<ObservableContext.Provider prehooks={ prehooks } value={ state }>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,
@@ -170,7 +160,7 @@ export const Product = ({ prehooks = undefined, type }) => {
 				</div>
 				<ProductDescription />
 				<PriceSticker />
-			</ObservableContextProvider>
+			</ObservableContext.Provider>
 		</div>
 	);
 };

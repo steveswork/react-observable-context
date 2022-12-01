@@ -2,7 +2,7 @@
 
 A context bearing an observable consumer [store](#store).\
 Only re-renders subscribing components on context state change.\
-Subscribing component decides which context state properties' change trigger its update.
+Subscribing component decides which context state properties' change to trigger its update.
 
 **Name:** React-Observable-Context
 
@@ -18,23 +18,23 @@ A context bearing an observable consumer [store](#store). State changes within t
 
 **React::memo** *(and PureComponents)* remain the go-to solution for the repeated automatic re-renderings of entire component trees resulting from ***component*** state changes. 
 
-***Recommendation:*** For optimum performance, consider wrapping in **React::memo** most components using this package's ***useContext*** function either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations.
+***Recommendation:*** For optimum performance, consider wrapping in **React::memo** most components using this module's ***useContext*** hook either directly or through another React hook. This will protect such components and their descendants from unrelated cascading render operations.
 
 ***Exempt*** from the recommendation are certain components such as those wrapped in the `React-Redux::connect()` Higher Order Component (HOC). Such HOC provides similar cascade-render protections to wrapped components and their descendants. 
 
 # API
 
-The React-Observable-Context package exports **4** modules namely: the **createContext** method, the **useContext** hook, the **Provider** component and the **UsageError** class.
+The React-Observable-Context module contains **3** exports namely: the **createContext** function, the **useContext** hook and the **UsageError** class.
 
 * **createContext** is a zero-parameter function returning a store-bearing context. Pass the context as a `context` parameter to the [useContext()](#usecontext) to obtain the context's [store](#store).
 
-* <b id="usecontext">useContext</b> is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component calling this hook.
-
-* **Provider** can immediately be used as-is anywhere the React-Observable-Context is required. It accepts **3** props and the customary Provider `children` prop. Supply the context to its `context` prop; the initial state to the customary Provider `value` prop; and the optional `prehooks` prop <i>(discussed in the [prehooks](#prehooks) section below)</i>.
+* <b id="usecontext">useContext</b> is analogous to React::useContext hook but returns the context store and takes a second parameter named ***watchedKeys***. The `watchedKeys` parameter is a list of state object property paths to watch. A change in any of the referenced properties automatically triggers a render of the component using this hook.
 
 * **UsageError** class is the Error type reported for attempts to access this context's store outside of its Provider component tree.
 
-***<u>Note:</u>*** the Provider `context` prop is not updateable. Once set, all further updates to this prop are not recorded.
+## Provider
+
+The Provider component is a property of the `context`. It can immediately be used as-is anywhere the React-Observable-Context is required. It accepts the customary `children` and `value` props, and an optional `prehooks` prop <i>(discussed in the [prehooks](#prehooks) subsection below)</i>.
 
 ## Store
 
@@ -44,7 +44,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
-* **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
+* **setState**: (changes: PartialState\<State\>) => void // merges only new/changed state slices.\
 ***Do this:*** `setState({stateKey0: changes0[, ...]});`\
 ***Not this:*** `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
 
@@ -69,28 +69,9 @@ The context's `store` exposes **4** methods for interacting with the context's i
 ### <u>*context.js*</u>
 
     import React from 'react';
-
-	import {
-		createContext,
-		Provider,
-		useContext
-	} from '@webkrafters/react-observable-context';
-	
-	export const ObservableContext = createContext();
-
-	export const ObservableContextProvider = ({ children, prehooks, value }) => (
-		<Provider
-			context={ ObservableContext }
-			prehooks={ prehooks }
-			value={ value }
-		>
-			{ children }
-		</Provider>
-	);
-	ObservableContextProvider.displayName = 'ObservableContextProvider';
-
+	import { createContext, useContext } from '@webkrafters/react-observable-context';
+	const ObservableContext = createContext();
 	export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
-
 	export default ObservableContext;
 
 ### <u>*index.js*</u>
@@ -110,7 +91,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 			return true;
 		},
 		setState: ( ...args ) => {
-			console.log( 'setting state with >>>> ', JSON.stringify( args ) );
+			console.log( 'merging following into state >>>> ', JSON.stringify( args ) );
 			return true;
 		}
 	};
@@ -137,7 +118,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 ### <u>*product.js*</u>
 
 	import React, { useCallback, useEffect, useState } from 'react';
-	import { ObservableContextProvider } from './context';
+	import ObservableContext from './context';
 	import Editor from './editor';
 	import PriceSticker from './price-sticker';
 	import ProductDescription from './product-description';
@@ -158,7 +139,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 				<div style={{ marginBottom: 10 }}>
 					<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..." /></label>
 				</div>
-				<ObservableContextProvider
+				<ObservableContext.Provider
 					prehooks={ updateHooks }
 					value={ state }
 				>
@@ -172,7 +153,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 					</div>
 					<ProductDescription />
 					<PriceSticker />
-				</ObservableContextProvider>
+				</ObservableContext.Provider>
 			</div>
 		);
 	};

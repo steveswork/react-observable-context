@@ -5,7 +5,7 @@ import React, {
 	useState
 } from 'react';
 
-import { ObservableContextProvider, Editor, ProductDescription, PriceSticker, TallyDisplay } from './normal';
+import { ObservableContext, Editor, ProductDescription, PriceSticker, TallyDisplay } from './normal';
 
 const EditorMemo = memo( Editor );
 const ProductDescriptionMemo = memo( ProductDescription );
@@ -25,7 +25,7 @@ const Product = ({ type }) => {
 			<div style={{ marginBottom: 10 }}>
 				<label>$ <input onKeyUp={ overridePricing } placeholder="override price here..."/></label>
 			</div>
-			<ObservableContextProvider value={ state }>
+			<ObservableContext.Provider value={ state }>
 				<div style={{
 					borderBottom: '1px solid #333',
 					marginBottom: 10,
@@ -36,7 +36,7 @@ const Product = ({ type }) => {
 				</div>
 				<ProductDescriptionMemo />
 				<PriceStickerMemo />
-			</ObservableContextProvider>
+			</ObservableContext.Provider>
 		</div>
 	);
 };
