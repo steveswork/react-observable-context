@@ -78,7 +78,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
     import React from 'react';
     import ReactDOM from 'react-dom';
-    import App from './app';s
+    import App from './app';
     ReactDOM.render(<App />, document.getElementById('root'));
 
 ### <u>*app.js*</u>
