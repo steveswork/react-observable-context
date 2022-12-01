@@ -20,11 +20,6 @@ import omit from 'lodash.omit';
 
 export class UsageError extends Error {}
 
-/** @type {OptionalTask} */
-const reportNonReactUsage = () => {
-	throw new UsageError( 'Detected usage outside of this context\'s Provider component tree. Please apply the exported Provider component' );
-};
-
 /**
  * @param {T} state
  * @return {PartialState<T>}
@@ -33,54 +28,16 @@ const reportNonReactUsage = () => {
 const defaultSelector = state => state;
 
 /**
- * @returns {ObservableContext<T>}
- * @template {State} T
- */
-export const createContext = () => _createContext({
-	getState: reportNonReactUsage,
-	resetState: reportNonReactUsage,
-	setState: reportNonReactUsage,
-	subscribe: reportNonReactUsage
-});
-
-/**
- * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
- *
- * @param {ObservableContext<T>} context
- * @param {Array<string|keyof T>} [watchedKeys = []] A list of state object property paths to watch. A change in any of the referenced properties results in this component render.
- * @returns {Store<T>}
- * @template {State} T
- */
-export const useContext = ( context, watchedKeys = [] ) => {
-
-	/** @type {Store<T>} */
-	const store = _useContext( context );
-
-	const [ , tripRender ] = useState( false );
-
-	const watched = useMemo(() => (
-		Array.isArray( watchedKeys )
-			? Array.from( new Set( watchedKeys ) )
-			: []
-	), [ watchedKeys ]);
-
-	useEffect(() => {
-		if( !watched.length ) { return }
-		return store.subscribe( newChanges => {
-			watched.some( w => has( newChanges, w ) ) &&
-			tripRender( s => !s );
-		} );
-	}, [ watched ]);
-
-	return store;
-};
-
-/**
  * @readonly
  * @type {Prehooks<T>}
  * @template {State} T
  */
 const defaultPrehooks = Object.freeze({});
+
+/** @type {OptionalTask} */
+const reportNonReactUsage = () => {
+	throw new UsageError( 'Detected usage outside of this context\'s Provider component tree. Please apply the exported Provider component' );
+};
 
 const _setState = (() => {
 	const initDiff = ( propKey, changed, replaced ) => {
@@ -146,68 +103,13 @@ const usePrehooksRef = prehooks => {
 	return prehooksRef;
 };
 
-/** @type {FC<{child: ReactNode}>} */
-const ChildMemo = (() => {
-	const useNodeMemo = node => {
-		const nodeRef = useRef( node );
-		if( !isEqual(
-			omit( nodeRef.current, '_owner' ),
-			omit( node, '_owner' )
-		) ) { nodeRef.current = node }
-		return nodeRef.current;
-	};
-	const ChildMemo = memo(({ child }) => child );
-	ChildMemo.displayName = 'ObservableContext.Provider.Internal.Guardian.ChildMemo';
-	const Guardian = ({ child }) => ( <ChildMemo child={ useNodeMemo( child ) } /> );
-	Guardian.displayName = 'ObservableContext.Provider.Internal.Guardian';
-	return Guardian;
-})();
-
-/** @type {(children: ReactNode) => ReactNode} */
-const memoizeImmediateChildTree = children => Children.map( children, child => {
-	if( typeof child.type === 'object' && 'compare' in child.type ) { return child }
-	if( child.props?.children ) {
-		child = cloneElement(
-			child,
-			omit( child.props, 'children' ),
-			memoizeImmediateChildTree( child.props.children )
-		);
-	}
-	return ( <ChildMemo child={ child } /> );
-} );
-
 /**
-* @type {FC<{
-* 		children?: ReactNode,
-* 		context: ObservableContext<T>,
-* 		value: Store<T>
-* }>}
-* @template {State} T
-*/
-const ProviderInternal = ({ children, context: StoreContext, value }) => (
-	<StoreContext.Provider value={ value }>
-		{ memoizeImmediateChildTree( children ) }
-	</StoreContext.Provider>
-);
-ProviderInternal.displayName = 'ObservableContext.Provider.Internal';
-
-/**
- * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
- *
- * @type {FC<{
- * 		children?: ReactNode,
- * 		context: ObservableContext<T>,
- * 		prehooks?: Prehooks<T>
- * 		value: PartialState<T>
- * }>}
+ * @param {Prehooks<T>} prehooks
+ * @param {T} value
+ * @returns {Store<T>}
  * @template {State} T
  */
-export const Provider = ({
-	children = null,
-	context,
-	prehooks = defaultPrehooks,
-	value
-}) => {
+const useStore = ( prehooks, value ) => {
 
 	const prehooksRef = usePrehooksRef( prehooks );
 	const initialState = useRef( value );
@@ -216,8 +118,6 @@ export const Provider = ({
 	const [ listeners ] = useState(() => new Set());
 	/** @type {[T, Function]} */
 	const [ state ] = useState(() => clonedeep( value ));
-	/** @type {ObservableContext<T>} */
-	const [ StoreContext ] = useState( context );
 
 	/** @type {Listener<T>} */
 	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
@@ -261,16 +161,132 @@ export const Provider = ({
 		getState, resetState, setState, subscribe
 	}));
 
-	return (
+	return store;
+};
+
+/** @type {FC<{child: ReactNode}>} */
+const ChildMemo = (() => {
+	const useNodeMemo = node => {
+		const nodeRef = useRef( node );
+		if( !isEqual(
+			omit( nodeRef.current, '_owner' ),
+			omit( node, '_owner' )
+		) ) { nodeRef.current = node }
+		return nodeRef.current;
+	};
+	const ChildMemo = memo(({ child }) => child );
+	ChildMemo.displayName = 'ObservableContext.Provider.Internal.Guardian.ChildMemo';
+	const Guardian = ({ child }) => ( <ChildMemo child={ useNodeMemo( child ) } /> );
+	Guardian.displayName = 'ObservableContext.Provider.Internal.Guardian';
+	return Guardian;
+})();
+
+/** @type {(children: ReactNode) => ReactNode} */
+const memoizeImmediateChildTree = children => Children.map( children, child => {
+	if( typeof child.type === 'object' && 'compare' in child.type ) { return child } // memo element
+	if( child.props?.children ) {
+		child = cloneElement(
+			child,
+			omit( child.props, 'children' ),
+			memoizeImmediateChildTree( child.props.children )
+		);
+	}
+	return ( <ChildMemo child={ child } /> );
+} );
+
+/**
+ * @type {FC<{
+ * 		children?: ReactNode,
+ * 		provider: ObservableContext<T>["Provider"],
+ * 		value: Store<T>
+ * }>}
+ * @template {State} T
+ */
+const ProviderInternal = ({ children, provider: Provider, value }) => (
+	<Provider value={ value }>
+		{ memoizeImmediateChildTree( children ) }
+	</Provider>
+);
+ProviderInternal.displayName = 'ObservableContext.Provider.Internal';
+
+/**
+ * @param {Provider<Store<T>>} Provider
+ */
+const makeObservable = Provider => {
+	/**
+	 * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
+	 *
+	 * @type {FC<{
+	 * 		children?: ReactNode,
+	 * 		context: ObservableContext<T>,
+	 * 		prehooks?: Prehooks<T>
+	 * 		value: PartialState<T>
+	 * }>}
+	 * @template {State} T
+	 */
+	const Observable = ({
+		children = null,
+		prehooks = defaultPrehooks,
+		value
+	}) => (
 		<ProviderInternal
-			context={ StoreContext }
-			value={ store }
+			provider={ Provider }
+			value={ useStore( prehooks, value ) }
 		>
 			{ children }
 		</ProviderInternal>
 	);
+	Observable.displayName = 'ObservableContext.Provider';
+	return Observable;
 };
-Provider.displayName = 'ObservableContext.Provider';
+
+/**
+ * @returns {ObservableContext<T>}
+ * @template {State} T
+ */
+export const createContext = () => {
+	const Context = _createContext({
+		getState: reportNonReactUsage,
+		resetState: reportNonReactUsage,
+		setState: reportNonReactUsage,
+		subscribe: reportNonReactUsage
+	});
+	const provider = Context.Provider;
+	Context.Provider = makeObservable( provider );
+	return Context;
+};
+
+/**
+ * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
+ *
+ * @param {ObservableContext<T>} context
+ * @param {Array<string|keyof T>} [watchedKeys = []] A list of state object property paths to watch. A change in any of the referenced properties results in this component render.
+ * @returns {Store<T>}
+ * @template {State} T
+ */
+export const useContext = ( context, watchedKeys = [] ) => {
+
+	/** @type {Store<T>} */
+	const store = _useContext( context );
+
+	const [ , tripRender ] = useState( false );
+
+	const watched = useMemo(() => (
+		Array.isArray( watchedKeys )
+			? Array.from( new Set( watchedKeys ) )
+			: []
+	), [ watchedKeys ]);
+
+	useEffect(() => {
+		if( !watched.length ) { return }
+		return store.subscribe( newChanges => {
+			watched.some( w => has( newChanges, w ) ) &&
+			tripRender( s => !s );
+		} );
+	}, [ watched ]);
+
+	return store;
+};
 
 /**
  * @typedef {Context<Store<T>>} ObservableContext
@@ -324,6 +340,11 @@ Provider.displayName = 'ObservableContext.Provider';
 /**
  * @typedef {import("react").FC<P>} FC
  * @template [P={}]
+ */
+
+/**
+ * @typedef {import("react").Provider<T>} Provider
+ * @template T
  */
 
 /**
