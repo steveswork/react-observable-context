@@ -194,31 +194,11 @@ const memoizeImmediateChildTree = children => Children.map( children, child => {
 	return ( <ChildMemo child={ child } /> );
 } );
 
-/**
- * @type {FC<{
- * 		children?: ReactNode,
- * 		provider: ObservableContext<T>["Provider"],
- * 		value: Store<T>
- * }>}
- * @template {State} T
- */
-const ProviderInternal = ({ children, provider: Provider, value }) => (
-	<Provider value={ value }>
-		{ memoizeImmediateChildTree( children ) }
-	</Provider>
-);
-ProviderInternal.displayName = 'ObservableContext.Provider.Internal';
-
-/**
- * @param {Provider<Store<T>>} Provider
- */
+/** @param {Provider<Store<T>>} Provider */
 const makeObservable = Provider => {
 	/**
-	 * Note: `context` prop is not updateable. Furtther updates to this prop are ignored.
-	 *
 	 * @type {FC<{
 	 * 		children?: ReactNode,
-	 * 		context: ObservableContext<T>,
 	 * 		prehooks?: Prehooks<T>
 	 * 		value: PartialState<T>
 	 * }>}
@@ -229,12 +209,9 @@ const makeObservable = Provider => {
 		prehooks = defaultPrehooks,
 		value
 	}) => (
-		<ProviderInternal
-			provider={ Provider }
-			value={ useStore( prehooks, value ) }
-		>
-			{ children }
-		</ProviderInternal>
+		<Provider value={ useStore( prehooks, value ) }>
+			{ memoizeImmediateChildTree( children ) }
+		</Provider>
 	);
 	Observable.displayName = 'ObservableContext.Provider';
 	return Observable;

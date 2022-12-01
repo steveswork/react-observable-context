@@ -44,7 +44,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 * **resetState**: VoidFunction // resets the state to the Provider initial `value` prop.
 
-* **setState**: (changes: PartialState\<State\>) => void // sets only new/changed state slices.\
+* **setState**: (changes: PartialState\<State\>) => void // merges only new/changed state slices.\
 ***Do this:*** `setState({stateKey0: changes0[, ...]});`\
 ***Not this:*** `setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});`
 
@@ -91,7 +91,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 			return true;
 		},
 		setState: ( ...args ) => {
-			console.log( 'setting state with >>>> ', JSON.stringify( args ) );
+			console.log( 'merging following into state >>>> ', JSON.stringify( args ) );
 			return true;
 		}
 	};
