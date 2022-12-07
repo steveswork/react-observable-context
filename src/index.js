@@ -12,20 +12,19 @@ import React, {
 } from 'react';
 
 import clonedeep from 'lodash.clonedeep';
+import get from 'lodash.get';
 import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 import isPlainObject from 'lodash.isplainobject';
 import omit from 'lodash.omit';
+import pick from 'lodash.pick';
+
+import { v4 as uuid } from 'uuid';
+
+export const DEFAULT_STATE_PATH = null;
 
 export class UsageError extends Error {}
-
-/**
- * @param {T} state
- * @return {PartialState<T>}
- * @template {State} T
- */
-const defaultSelector = state => state;
 
 /**
  * @readonly
@@ -34,9 +33,30 @@ const defaultSelector = state => state;
  */
 const defaultPrehooks = Object.freeze({});
 
-/** @type {OptionalTask} */
 const reportNonReactUsage = () => {
 	throw new UsageError( 'Detected usage outside of this context\'s Provider component tree. Please apply the exported Provider component' );
+};
+
+/**
+ * Converts argument to readonly.
+ *
+ * Note: Mutates original argument.
+ *
+ * @param {T} v
+ * @returns {Readonly<T>}
+ * @template T
+ */
+const makeReadonly = v => {
+	let frozen = true;
+	if( isPlainObject( v ) ) {
+		for( const k in v ) { makeReadonly( v[ k ] ) }
+		frozen = Object.isFrozen( v );
+	} else if( Array.isArray( v ) ) {
+		v.forEach(([ , i ]) => makeReadonly( v[ i ] ))
+		frozen = Object.isFrozen( v );
+	}
+	!frozen && Object.freeze( v );
+	return v;
 };
 
 const _setState = (() => {
@@ -103,36 +123,214 @@ const usePrehooksRef = prehooks => {
 	return prehooksRef;
 };
 
+/** @template {State} T */
+class Accessor {
+	static #NUM_INSTANCES = 0;
+	/** @type {Set<string>} */
+	#clients;
+	/** @type {number} */
+	#id;
+	/** @type {Array<string>} */
+	#paths;
+
+	/** @param {Array<string>} accessedPropertyPaths */
+	constructor( accessedPropertyPaths ) {
+		this.#clients = new Set();
+		this.#id = ++Accessor.#NUM_INSTANCES;
+		this.#paths accessedPropertyPaths;
+		/** @type {boolean} */
+		this.refreshDue = false;
+		/** @type {Readonly<PartialState<T>>} */
+		this.value = makeReadonly({});
+	}
+
+	get numClients() { return this.#clients.size }
+	get id() { return this.#id }
+	get paths() { return this.#paths }
+	/** @param {string} clientId */
+	addClient( clientId ) { this.#clients.add( clientId ) }
+	/** @type {(clientId: string) => boolean} */
+	hasClient( clientId ) { return this.#clients.has( clientId ) }
+	/**
+	 * @param {{[propertyPath: string]: Atom<T>}} atoms
+	 * @returns {Readonly<PartialState<T>>}
+	 */
+	refreshValue( atoms ) {
+		if( !this.refreshDue ) { return this.value }
+		this.refreshDue = false;
+		const paths = this.#paths[ 0 ] === DEFAULT_STATE_PATH
+			? Object.keys( atoms )
+			: this.#paths;
+		for( const p of paths ) {
+			if( !( p in atoms ) ) { atoms[ p ] = new Atom() }
+			const atom = atoms[ p ];
+			!atom.isConnected( this.#id ) &&
+			atom.connect( this.#id )
+			!isEqual( get( this.value, p ), atom.value ) &&
+			set( this.value, p, atom.value );
+		}
+		this.value = makeReadonly({ ...this.value });
+		return this.value;
+	};
+	/** @type {(clientId: string) => boolean} */
+	removeClient( clientId ) { this.#clients.delete( clientId ) }
+}
+
+/**
+ * An atom represents an entry for each individual property path of the state still in use by client components
+ *
+ * @template {State} T
+ */
+class Atom {
+	/** @type {Set<number>} */
+	#connections;
+	/** @type {Readonly<PartialState<T>>} */
+	#value
+
+	constructor() {
+		this.#connections = new Set();
+		this.#value = makeReadonly({});
+	}
+
+	/** @returns {Readonly<PartialState<T>>} */
+	get value () { return this.#value }
+	/** @param { PartialState<T>} newValue */
+	set value( newValue ) { this.#value = makeReadonly( clonedeep( newValue ) ) }
+	/**
+	 * @param {number} accessorId
+	 * @returns {number} Number of connections remaining
+	 */
+	connect( accessorId ) {
+		this.#connections.add( accessorId );
+		return this.#connections.size;
+	}
+	/**
+	 * @param {number} accessorId
+	 * @returns {number} Number of connections remaining
+	 */
+	disconnect( accessorId ) {
+		this.#connections.delete( accessorId );
+		return this.#connections.size;
+	}
+	/** @param {number} accessorId */
+	isConnected( accessorId ) { return this.#connections.has( accessorId ) }
+}
+
+/** @template {State} T */
+class AccessorCache {
+	/** @type {{[propertyPaths: string]: Accessor<T>}} */
+	#accessors;
+	/** @type {{[propertyPath: string]: Atom<T>}} */
+	#atoms;
+
+	constructor() {
+		this.#accessors = {};
+		this.#atoms = {};
+	}
+
+	/**
+	 * Add new accessor to the cache
+	 *
+	 * @param {string} cacheKey
+	 * @param {Array<string>} propertyPaths
+	 * @return {Accessor<T>}
+	 */
+	#createAccessor( cacheKey, propertyPaths ) {
+		this.#accessors[ cacheKey ] = new Accessor( propertyPaths );
+		const atoms = this.#atoms;
+		for( const path of propertyPaths ) {
+			if( path in atoms || path === DEFAULT_STATE_PATH ) { continue }
+			atoms[ path ] = new Atom();
+		}
+		return this.#accessors[ cacheKey ];
+	}
+	/** @type {(clientId: string, ...propertyPaths: string[]) => Readonly<PartialState<T>>} */
+	get( clientId, ...propertyPaths ) {
+		const cacheKey = JSON.stringify( isEmpty( propertyPaths ) ? [ DEFAULT_STATE_PATH ] : propertyPaths );
+		const accessor = cacheKey in this.#accessors
+			? this.#accessors[ cacheKey ]
+			: this.#createAccessor( cacheKey, propertyPaths );
+		!accessor.hasClient( clientId ) && accessor.addClient( clientId );
+		return accessor.refreshValue( this.#atoms );
+	}
+	/** @param {string} clientId */
+	unlinkClient( clientId ) {
+		const accessors = this.#accessors;
+		const atoms = this.#atoms;
+		for( const k in accessors ) {
+			const accessor = accessors[ k ];
+			if( !accessor.removeClient( clientId ) || accessor.numClients ) { continue }
+			for( const p of accessor.paths ) {
+				if( p in atoms && atoms[ p ].disconnect( accessor.id ) < 1 ) {
+					delete atoms[ p ];
+				}
+			}
+			delete accessors[ k ];
+		}
+	}
+	/**
+	 * @param {T} source
+	 * @param {PartialState<T>} newChanges
+	 */
+	watchSource( source, newChanges ) {
+		const accessors = this.#accessors;
+		const atoms = this.#atoms;
+		for( const path in atoms ) {
+			if( !has( newChanges, path ) ) { continue }
+			atoms[ path ].value = get( source, path );
+			for( const k in accessors ) {
+				if( !accessors[ k ].refreshDue || accessors[ k ].paths.includes( path ) ) {
+					accessors[ k ].refreshDue = true;
+				}
+			}
+		}
+	}
+}
+
+/**
+ * @param {T} initStateValue
+ * @template {State} T
+ */
+const useStateManager = initStateValue => {
+	/** @type {[T, Function]} */
+	const [ state ] = useState(() => clonedeep( initStateValue ));
+	/** @type {[AccessorCache<T>, Function]} */
+	const [ cache ] = useState(() => new AccessorCache());
+	/** @type {StoreInternal<T>["getState"]} */
+	const select = useCallback(( clientId, ...propertyPaths ) => cache.get( clientId, ...propertyPaths ), []);
+	/** @type {Listener<T>} */
+	const stateWatch = useCallback( newValue => cache.watchSource( state, newValue ), [] );
+	/** @type {StoreInternal<T>["unlinkCache"]} */
+	const unlink = useCallback( clientId => cache.unlinkClient( clientId ), [] );
+	return { select, state, stateWatch, unlink };
+};
+
 /**
  * @param {Prehooks<T>} prehooks
  * @param {T} value
- * @returns {Store<T>}
  * @template {State} T
  */
 const useStore = ( prehooks, value ) => {
 
 	const prehooksRef = usePrehooksRef( prehooks );
-	const initialState = useRef( value );
+	/** @type {MutableRefObject<string>} */
+	const sessionKey = useRef();
+	/** @type {MutableRefObject<PartialState<T>>} */
+	const initialState = useRef({});
+
+	const { select, state, stateWatch, unlink } = useStateManager( value );
 
 	/** @type {[Set<Listener<T>>, Function]} */
 	const [ listeners ] = useState(() => new Set());
-	/** @type {[T, Function]} */
-	const [ state ] = useState(() => clonedeep( value ));
 
 	/** @type {Listener<T>} */
 	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
 
-	/** @type {Store<T>["getState"]} */
-	const getState = useCallback(( selector = defaultSelector ) => {
-		const slice = selector( state );
-		return typeof slice === 'object'
-			? clonedeep( slice )
-			: slice;
-	}, []);
-
-	/** @type {Store<T>["resetState"]} */
+	/** @type {StoreInternal<T>["resetState"]} */
 	const resetState = useCallback(() => {
-		const original = clonedeep( initialState.current );
+		const original = typeof sessionKey.current !== 'undefined'
+			? JSON.parse( globalThis.sessionStorage.getItem( sessionKey.current ) )
+			: clondeep( initialState.current );
 		( !( 'resetState' in prehooksRef.current ) ||
 			prehooksRef.current.resetState({
 				current: clonedeep( state ), original
@@ -140,7 +338,7 @@ const useStore = ( prehooks, value ) => {
 		) && _setState( state, original, onChange )
 	}, []);
 
-	/** @type {Store<T>["setState"]} */
+	/** @type {StoreInternal<T>["setState"]} */
 	const setState = useCallback( changes => {
 		changes = clonedeep( changes );
 		( !( 'setState' in prehooksRef.current ) ||
@@ -148,17 +346,40 @@ const useStore = ( prehooks, value ) => {
 		) && _setState( state, changes, onChange );
 	}, [] );
 
-	/** @type {Store<T>["subscribe"]} */
+	/** @type {StoreInternal<T>["subscribe"]} */
 	const subscribe = useCallback( listener => {
 		listeners.add( listener );
 		return () => listeners.delete( listener );
 	}, [] );
 
+	useEffect(() => {
+		if( typeof globalThis.sessionStorage?.setItem !== 'undefined' ) {
+			const sKey = `${ uuid() }:${ Date.now() }:${ Math.random() }`;
+			try {
+				globalThis.sessionStorage.setItem( sKey, JSON.stringify( value ) );
+				sessionKey.current = sKey;
+				return () => globalThis.sessionStorage.removeItem( sKey );
+			} catch( e ) { console.warn( e ) }
+		}
+		initialState.current = clonedeep( value );
+	}, []);
+
 	useEffect(() => setState( clonedeep( value ) ), [ value ]);
 
-	/** @type {[Store<T>, Function]} */
+	useEffect(() => {
+		if( !listeners.size ) {
+			listeners.add( stateWatch );
+		} else {
+			const newList = Array.from( listeners ).unshift( stateWatch );
+			listeners.clear();
+			newList.forEach( l => { listeners.add( l ) } );
+		}
+		return () => listeners.delete( stateWatch );
+	}, [ stateWatch ]);
+
+	/** @type {[StoreInternal<T>, Function]} */
 	const [ store ] = useState(() => ({
-		getState, resetState, setState, subscribe
+		getState: select, resetState, setState, subscribe, unlinkCache: unlink
 	}));
 
 	return store;
@@ -194,7 +415,7 @@ const memoizeImmediateChildTree = children => Children.map( children, child => {
 	return ( <ChildMemo child={ child } /> );
 } );
 
-/** @param {Provider<Store<T>>} Provider */
+/** @param {Provider<IStore>} Provider */
 const makeObservable = Provider => {
 	/**
 	 * @type {FC<{
@@ -243,10 +464,12 @@ export const createContext = () => {
  */
 export const useContext = ( context, watchedKeys = [] ) => {
 
-	/** @type {Store<T>} */
-	const store = _useContext( context );
+	/** @type {StoreInternal<T>} */
+	const { getState: _getState, unlinkCache, ...store } = _useContext( context );
 
 	const [ , tripRender ] = useState( false );
+
+	const [ clientId ] = useState( uuid );
 
 	const watched = useMemo(() => (
 		Array.isArray( watchedKeys )
@@ -262,18 +485,20 @@ export const useContext = ( context, watchedKeys = [] ) => {
 		} );
 	}, [ watched ]);
 
-	return store;
+	useEffect(() => () => unlinkCache( clientId ), []);
+
+	/** @type {Store<T>["getState"]} */
+	const getState = useCallback(( ...propertyPaths ) => _getState( clientId, ...propertyPaths ), []);
+
+	return { getState, ...store };
 };
 
 /**
- * @typedef {Context<Store<T>>} ObservableContext
+ * @typedef {IObservableContext & Context<Store<T>>} ObservableContext
  * @template {State} T
  */
 
-/**
- * @typedef {F extends void ? () => never : F} OptionalTask
- * @template [F=void]
- */
+/** @typedef {Context<IStore>} IObservableContext */
 
 /**
  * @typedef {(newValue: PartialState<T>, oldValue: PartialState<T>) => void} Listener
@@ -283,12 +508,7 @@ export const useContext = ( context, watchedKeys = [] ) => {
 /** @typedef {{[x:string]: *}} State */
 
 /**
- * @typedef {{[x:string]: *} & {[K in keyof T]?: T[K]}} PartialState
- * @template {State} T
- */
-
-/**
- * @typedef {(state: T) => *} Selector
+ * @typedef {{[K in keyof T]?: T[K]}} PartialState
  * @template {State} T
  */
 
@@ -301,14 +521,26 @@ export const useContext = ( context, watchedKeys = [] ) => {
  */
 
 /**
- * @typedef {{
- *   getState: OptionalTask<(selector?: Selector<T>) => *>,
- *   resetState: OptionalTask<VoidFunction>,
- *   setState: OptionalTask<(changes: PartialState<T>) => void>,
- *   subscribe: OptionalTask<(listener: Listener<T>) => Unsubscribe>
+ * @typedef {Store<T> & {
+ * 		getState: (clientId: string, ...propertyPaths?: string[]) => Readonly<PartialState<T>>,
+ * 		unlinkCache: (clientId: string) => void
+ * }} StoreInternal
+ * @template {State} T
+ */
+
+/**
+ * @typedef {IStore & {
+ *   getState: (...propertyPaths?: string[]) => Readonly<PartialState<T>>,
+ *   resetState: VoidFunction,
+ *   setState: (changes: PartialState<T>) => void,
+ *   subscribe: (listener: Listener<T>) => Unsubscribe
  * }} Store
  * @template {State} T
  */
+
+/** @typedef {{[K in IStoreKeys]: typeof reportNonReactUsage}} IStore */
+
+/** @typedef {"getState"|"resetState"|"setState"|"subscribe"} IStoreKeys */
 
 /** @typedef {VoidFunction} Unsubscribe */
 
@@ -326,5 +558,10 @@ export const useContext = ( context, watchedKeys = [] ) => {
 
 /**
  * @typedef {import("react").Context<T>} Context
+ * @template T
+ */
+
+/**
+ * @typedef {import('react').MutableRefObject<T>} MutableRefObject
  * @template T
  */

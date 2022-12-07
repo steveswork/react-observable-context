@@ -8,11 +8,14 @@
   ],
   "dependencies": {
     "lodash.clonedeep": "^4.5.0",
+    "lodash.get": "^4.4.2",
     "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isplainobject": "^4.0.6",
-    "lodash.omit": "^4.5.0"
+    "lodash.omit": "^4.5.0",
+    "lodash.pick": "^4.4.0",
+    "uuid": "^9.0.0"
   },
   "description": "Observable react context - prevents an automatic total component tree tear-down and re-rendering during context updates.",
   "devDependencies": {
@@ -76,10 +79,10 @@
     "url": "git+https://github.com/steveswork/react-observable-context.git"
   },
   "scripts": {
-    "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc",
+    "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc && node ./trim-comments",
     "test": "eslint --fix && jest --updateSnapshot",
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/index.d.ts",
-  "version": "3.0.0"
+  "version": "4.0.0"
 }
