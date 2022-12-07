@@ -68,8 +68,7 @@ The context's `store` exposes **4** methods for interacting with the context's i
 
 ### <u>*context.js*</u>
 
-    import React from 'react';
-	import { createContext, useContext } from '@webkrafters/react-observable-context';
+    import { createContext, useContext } from '@webkrafters/react-observable-context';
 	const ObservableContext = createContext();
 	export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
 	export default ObservableContext;
