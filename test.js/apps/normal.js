@@ -29,13 +29,15 @@ export const TallyDisplay = () => {
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
+	const { color, type, price } = getState( ...TALLY_DISPLAY_CONTEXT_KEYS );
+
 	return (
 		<div>
 			<table>
 				<tbody>
-					<tr><td><label>Type:</label></td><td>{ getState( s => s.type ) }</td></tr>
-					<tr><td><label>Color:</label></td><td>{ getState( s => s.color ) }</td></tr>
-					<tr><td><label>Price:</label></td><td>{ getState( s => s.price ).toFixed( 2 ) }</td></tr>
+					<tr><td><label>Type:</label></td><td>{ type }</td></tr>
+					<tr><td><label>Color:</label></td><td>{ color }</td></tr>
+					<tr><td><label>Price:</label></td><td>{ price.toFixed( 2 ) }</td></tr>
 				</tbody>
 			</table>
 			<div style={{ textAlign: 'right' }}>
@@ -99,8 +101,7 @@ export const ProductDescription = () => {
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 
-	const color = store.getState( s => s.color );
-	const type = store.getState( s => s.type );
+	const { color, type } = store.getState( ...PRODUCT_DESC_CONTEXT_KEYS );
 
 	return (
 		<div style={{ fontSize: 24 }}>
@@ -119,9 +120,11 @@ export const PriceSticker = () => {
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
+	const { price } = getState( ...PRICE_STICKER_CONTEXT_KEYS );
+
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
-			${ getState( s => s.price ).toFixed( 2 ) }
+			${ price.toFixed( 2 ) }
 		</div>
 	);
 };
