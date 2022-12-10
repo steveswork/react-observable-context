@@ -5,7 +5,7 @@ import React, {
 	useState
 } from 'react';
 
-import { createContext, useContext } from '../../src';
+import { createContext, useContext } from '..';
 
 export const ObservableContext = createContext();
 export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
@@ -132,7 +132,7 @@ PriceSticker.displayName = 'PriceSticker';
 
 /**
  * @type {React.FC<{
- * 		prehooks?: import("../../src").Prehooks<{[x:string]:*}>,
+ * 		prehooks?: import("..").Prehooks<{[x:string]:*}>,
  * 		type:string
  * }>}
  */

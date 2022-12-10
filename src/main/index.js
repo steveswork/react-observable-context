@@ -12,17 +12,15 @@ import React, {
 } from 'react';
 
 import clonedeep from 'lodash.clonedeep';
-import get from 'lodash.get';
 import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 import isPlainObject from 'lodash.isplainobject';
 import omit from 'lodash.omit';
-import pick from 'lodash.pick';
 
 import { v4 as uuid } from 'uuid';
 
-export const DEFAULT_STATE_PATH = null;
+import AccessorCache from '../model/accessor-cache';
 
 export class UsageError extends Error {}
 
@@ -35,28 +33,6 @@ const defaultPrehooks = Object.freeze({});
 
 const reportNonReactUsage = () => {
 	throw new UsageError( 'Detected usage outside of this context\'s Provider component tree. Please apply the exported Provider component' );
-};
-
-/**
- * Converts argument to readonly.
- *
- * Note: Mutates original argument.
- *
- * @param {T} v
- * @returns {Readonly<T>}
- * @template T
- */
-const makeReadonly = v => {
-	let frozen = true;
-	if( isPlainObject( v ) ) {
-		for( const k in v ) { makeReadonly( v[ k ] ) }
-		frozen = Object.isFrozen( v );
-	} else if( Array.isArray( v ) ) {
-		v.forEach(([ , i ]) => makeReadonly( v[ i ] ))
-		frozen = Object.isFrozen( v );
-	}
-	!frozen && Object.freeze( v );
-	return v;
 };
 
 const _setState = (() => {
@@ -123,170 +99,6 @@ const usePrehooksRef = prehooks => {
 	return prehooksRef;
 };
 
-/** @template {State} T */
-class Accessor {
-	static #NUM_INSTANCES = 0;
-	/** @type {Set<string>} */
-	#clients;
-	/** @type {number} */
-	#id;
-	/** @type {Array<string>} */
-	#paths;
-
-	/** @param {Array<string>} accessedPropertyPaths */
-	constructor( accessedPropertyPaths ) {
-		this.#clients = new Set();
-		this.#id = ++Accessor.#NUM_INSTANCES;
-		this.#paths accessedPropertyPaths;
-		/** @type {boolean} */
-		this.refreshDue = false;
-		/** @type {Readonly<PartialState<T>>} */
-		this.value = makeReadonly({});
-	}
-
-	get numClients() { return this.#clients.size }
-	get id() { return this.#id }
-	get paths() { return this.#paths }
-	/** @param {string} clientId */
-	addClient( clientId ) { this.#clients.add( clientId ) }
-	/** @type {(clientId: string) => boolean} */
-	hasClient( clientId ) { return this.#clients.has( clientId ) }
-	/**
-	 * @param {{[propertyPath: string]: Atom<T>}} atoms
-	 * @returns {Readonly<PartialState<T>>}
-	 */
-	refreshValue( atoms ) {
-		if( !this.refreshDue ) { return this.value }
-		this.refreshDue = false;
-		const paths = this.#paths[ 0 ] === DEFAULT_STATE_PATH
-			? Object.keys( atoms )
-			: this.#paths;
-		for( const p of paths ) {
-			if( !( p in atoms ) ) { atoms[ p ] = new Atom() }
-			const atom = atoms[ p ];
-			!atom.isConnected( this.#id ) &&
-			atom.connect( this.#id )
-			!isEqual( get( this.value, p ), atom.value ) &&
-			set( this.value, p, atom.value );
-		}
-		this.value = makeReadonly({ ...this.value });
-		return this.value;
-	};
-	/** @type {(clientId: string) => boolean} */
-	removeClient( clientId ) { this.#clients.delete( clientId ) }
-}
-
-/**
- * An atom represents an entry for each individual property path of the state still in use by client components
- *
- * @template {State} T
- */
-class Atom {
-	/** @type {Set<number>} */
-	#connections;
-	/** @type {Readonly<PartialState<T>>} */
-	#value
-
-	constructor() {
-		this.#connections = new Set();
-		this.#value = makeReadonly({});
-	}
-
-	/** @returns {Readonly<PartialState<T>>} */
-	get value () { return this.#value }
-	/** @param { PartialState<T>} newValue */
-	set value( newValue ) { this.#value = makeReadonly( clonedeep( newValue ) ) }
-	/**
-	 * @param {number} accessorId
-	 * @returns {number} Number of connections remaining
-	 */
-	connect( accessorId ) {
-		this.#connections.add( accessorId );
-		return this.#connections.size;
-	}
-	/**
-	 * @param {number} accessorId
-	 * @returns {number} Number of connections remaining
-	 */
-	disconnect( accessorId ) {
-		this.#connections.delete( accessorId );
-		return this.#connections.size;
-	}
-	/** @param {number} accessorId */
-	isConnected( accessorId ) { return this.#connections.has( accessorId ) }
-}
-
-/** @template {State} T */
-class AccessorCache {
-	/** @type {{[propertyPaths: string]: Accessor<T>}} */
-	#accessors;
-	/** @type {{[propertyPath: string]: Atom<T>}} */
-	#atoms;
-
-	constructor() {
-		this.#accessors = {};
-		this.#atoms = {};
-	}
-
-	/**
-	 * Add new accessor to the cache
-	 *
-	 * @param {string} cacheKey
-	 * @param {Array<string>} propertyPaths
-	 * @return {Accessor<T>}
-	 */
-	#createAccessor( cacheKey, propertyPaths ) {
-		this.#accessors[ cacheKey ] = new Accessor( propertyPaths );
-		const atoms = this.#atoms;
-		for( const path of propertyPaths ) {
-			if( path in atoms || path === DEFAULT_STATE_PATH ) { continue }
-			atoms[ path ] = new Atom();
-		}
-		return this.#accessors[ cacheKey ];
-	}
-	/** @type {(clientId: string, ...propertyPaths: string[]) => Readonly<PartialState<T>>} */
-	get( clientId, ...propertyPaths ) {
-		const cacheKey = JSON.stringify( isEmpty( propertyPaths ) ? [ DEFAULT_STATE_PATH ] : propertyPaths );
-		const accessor = cacheKey in this.#accessors
-			? this.#accessors[ cacheKey ]
-			: this.#createAccessor( cacheKey, propertyPaths );
-		!accessor.hasClient( clientId ) && accessor.addClient( clientId );
-		return accessor.refreshValue( this.#atoms );
-	}
-	/** @param {string} clientId */
-	unlinkClient( clientId ) {
-		const accessors = this.#accessors;
-		const atoms = this.#atoms;
-		for( const k in accessors ) {
-			const accessor = accessors[ k ];
-			if( !accessor.removeClient( clientId ) || accessor.numClients ) { continue }
-			for( const p of accessor.paths ) {
-				if( p in atoms && atoms[ p ].disconnect( accessor.id ) < 1 ) {
-					delete atoms[ p ];
-				}
-			}
-			delete accessors[ k ];
-		}
-	}
-	/**
-	 * @param {T} source
-	 * @param {PartialState<T>} newChanges
-	 */
-	watchSource( source, newChanges ) {
-		const accessors = this.#accessors;
-		const atoms = this.#atoms;
-		for( const path in atoms ) {
-			if( !has( newChanges, path ) ) { continue }
-			atoms[ path ].value = get( source, path );
-			for( const k in accessors ) {
-				if( !accessors[ k ].refreshDue || accessors[ k ].paths.includes( path ) ) {
-					accessors[ k ].refreshDue = true;
-				}
-			}
-		}
-	}
-}
-
 /**
  * @param {T} initStateValue
  * @template {State} T
@@ -297,7 +109,7 @@ const useStateManager = initStateValue => {
 	/** @type {[AccessorCache<T>, Function]} */
 	const [ cache ] = useState(() => new AccessorCache());
 	/** @type {StoreInternal<T>["getState"]} */
-	const select = useCallback(( clientId, ...propertyPaths ) => cache.get( clientId, ...propertyPaths ), []);
+	const select = useCallback(( clientId, ...propertyPaths ) => cache.get( state, clientId, ...propertyPaths ), []);
 	/** @type {Listener<T>} */
 	const stateWatch = useCallback( newValue => cache.watchSource( state, newValue ), [] );
 	/** @type {StoreInternal<T>["unlinkCache"]} */
@@ -330,7 +142,7 @@ const useStore = ( prehooks, value ) => {
 	const resetState = useCallback(() => {
 		const original = typeof sessionKey.current !== 'undefined'
 			? JSON.parse( globalThis.sessionStorage.getItem( sessionKey.current ) )
-			: clondeep( initialState.current );
+			: clonedeep( initialState.current );
 		( !( 'resetState' in prehooksRef.current ) ||
 			prehooksRef.current.resetState({
 				current: clonedeep( state ), original
@@ -505,10 +317,10 @@ export const useContext = ( context, watchedKeys = [] ) => {
  * @template {State} T
  */
 
-/** @typedef {{[x:string]: *}} State */
+/** @typedef {import("../types").State} State */
 
 /**
- * @typedef {{[K in keyof T]?: T[K]}} PartialState
+ * @typedef {import("../types").PartialState<T>} PartialState
  * @template {State} T
  */
 

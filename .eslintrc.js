@@ -1,9 +1,9 @@
 module.exports = {
 	env: {
 		browser: true,
-		es2022: true,
+		es2021: true,
 		'jest/globals': true,
-		node: true,
+		node: true
 	},
 	extends: [
 		'plugin:react/recommended',
@@ -13,7 +13,7 @@ module.exports = {
 		ecmaFeatures: {
 			jsx: true
 		},
-		ecmaVersion: 11,
+		ecmaVersion: 13,
 		sourceType: 'module'
 	},
 	plugins: [ 'jest', 'react' ],

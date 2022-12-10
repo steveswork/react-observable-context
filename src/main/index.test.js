@@ -5,10 +5,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import '@testing-library/jest-dom';
 
-import { UsageError } from '../src';
+import { UsageError } from '.';
 
-import AppNormal, { Product, TallyDisplay } from './apps/normal';
-import AppWithPureChildren from './apps/with-pure-children';
+import AppNormal, { Product, TallyDisplay } from './test-apps/normal';
+import AppWithPureChildren from './test-apps/with-pure-children';
 
 beforeAll(() => {
 	jest.spyOn( console, 'log' ).mockImplementation(() => {});
