@@ -71,6 +71,8 @@ class Accessor {
 	#id;
 	/** @type {Array<string>} */
 	#paths;
+	/** @type {T} */
+	#source;
 	/** @type {Readonly<PartialState<T>>} */
 	#value;
 
@@ -89,13 +91,17 @@ class Accessor {
 		return arranged;
 	}
 
-	/** @param {Array<string>} accessedPropertyPaths */
-	constructor( accessedPropertyPaths ) {
+	/**
+	 * @param {T} source State object reference from which the accessedPropertyPaths are to be selected.
+	 * @param {Array<string>} accessedPropertyPaths
+	 */
+	constructor( source, accessedPropertyPaths ) {
 		this.#clients = new Set();
 		this.#id = ++Accessor.#NUM_INSTANCES;
 		this.#paths = Accessor.#arrangePaths( accessedPropertyPaths );
 		/** @type {boolean} */
 		this.refreshDue = true;
+		this.#source = source;
 		this.#value = makeReadonly({});
 	}
 
@@ -117,18 +123,17 @@ class Accessor {
 	removeClient( clientId ) { this.#clients.delete( clientId ) }
 
 	/**
-	 * @param {T} source An object serving as the state object for resolving `DEFAULT_STATE_PATH` slice changes
 	 * @param {{[propertyPath: string]: Atom}} atoms Curated slices of state currently requested
 	 * @returns {Readonly<PartialState<State>>}
 	 */
-	refreshValue( source, atoms ) {
+	refreshValue( atoms ) {
 		if( !this.refreshDue ) { return this.#value }
 		this.refreshDue = false;
 		const value = { ...this.#value };
 		if( this.#paths[ 0 ] === DEFAULT_STATE_PATH ) {
-			for( const k in source ) {
-				if( !isEqual( value[ k ], source[ k ] ) ) {
-					value[ k ] = clonedeep( source[ k ] );
+			for( const k in this.#source ) {
+				if( !isEqual( value[ k ], this.#source[ k ] ) ) {
+					value[ k ] = clonedeep( this.#source[ k ] );
 				}
 			}
 		} else {
@@ -143,7 +148,7 @@ class Accessor {
 					set( update, p, atom.value );
 					continue;
 				}
-				const slice = clonedeep( pick( source, p ) ); // need to maintain exact state property nomenclature
+				const slice = clonedeep( pick( this.#source, p ) ); // need to maintain exact state property nomenclature
 				set( slice, p, atom.value );
 				update = { ...update, ...slice };
 			}

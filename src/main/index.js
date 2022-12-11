@@ -107,11 +107,11 @@ const useStateManager = initStateValue => {
 	/** @type {[T, Function]} */
 	const [ state ] = useState(() => clonedeep( initStateValue ));
 	/** @type {[AccessorCache<T>, Function]} */
-	const [ cache ] = useState(() => new AccessorCache());
+	const [ cache ] = useState(() => new AccessorCache( state ));
 	/** @type {StoreInternal<T>["getState"]} */
-	const select = useCallback(( clientId, ...propertyPaths ) => cache.get( state, clientId, ...propertyPaths ), []);
+	const select = useCallback( cache.get.bind( cache ), []);
 	/** @type {Listener<T>} */
-	const stateWatch = useCallback( newValue => cache.watchSource( state, newValue ), [] );
+	const stateWatch = useCallback( cache.watchSource.bind( cache ), [] );
 	/** @type {StoreInternal<T>["unlinkCache"]} */
 	const unlink = useCallback( clientId => cache.unlinkClient( clientId ), [] );
 	return { select, state, stateWatch, unlink };

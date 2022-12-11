@@ -13,10 +13,14 @@ class AccessorCache {
 	#accessors;
 	/** @type {{[propertyPath: string]: Atom}} */
 	#atoms;
+	/** @type {T} */
+	#origin;
 
-	constructor() {
+	/** @param {T} origin State object reference from which slices stored in this cache are to be curated */
+	constructor( origin ) {
 		this.#accessors = {};
 		this.#atoms = {};
+		this.#origin = origin;
 	}
 
 	/**
@@ -28,7 +32,7 @@ class AccessorCache {
 	 */
 	#createAccessor( cacheKey, propertyPaths ) {
 		const atoms = this.#atoms;
-		const accessor = new Accessor( propertyPaths );
+		const accessor = new Accessor( this.#origin, propertyPaths );
 		this.#accessors[ cacheKey ] = accessor;
 		for( const path of accessor.paths ) {
 			if( path in atoms || path === DEFAULT_STATE_PATH ) { continue }
@@ -41,18 +45,17 @@ class AccessorCache {
 	 * Gets state slice from the cache matching the `propertyPaths`.\
 	 * If not found, creates a new entry for the client from source, and returns it.
 	 *
-	 * @param {T} source An object serving from which slices of state are curated and cached
 	 * @param {string} clientId
 	 * @param {...string} propertyPaths
 	 * @return {Readonly<PartialState<T>>}
 	 */
-	get( source, clientId, ...propertyPaths ) {
+	get( clientId, ...propertyPaths ) {
 		const cacheKey = JSON.stringify( isEmpty( propertyPaths ) ? [ DEFAULT_STATE_PATH ] : propertyPaths );
 		const accessor = cacheKey in this.#accessors
 			? this.#accessors[ cacheKey ]
 			: this.#createAccessor( cacheKey, propertyPaths );
 		!accessor.hasClient( clientId ) && accessor.addClient( clientId );
-		return accessor.refreshValue( source, this.#atoms );
+		return accessor.refreshValue( this.#atoms );
 	}
 
 	/**
@@ -76,20 +79,22 @@ class AccessorCache {
 	}
 
 	/**
-	 * Observes the ObservableContext store for state changes to update internal states.
+	 * Observes the origin state bearing ObservableContext store for state changes to update accessors.
 	 *
-	 * @param {T} source An object serving from which slices of state are curated and cached
 	 * @param {PartialState<T>} newChanges
 	 */
-	watchSource( source, newChanges ) {
+	watchSource( newChanges ) {
 		const accessors = this.#accessors;
 		const atoms = this.#atoms;
 		for( const path in atoms ) {
 			if( !has( newChanges, path ) ) { continue }
-			atoms[ path ].value = get( source, path );
+			atoms[ path ].value = get( this.#origin, path );
 			for( const k in accessors ) {
 				const accessorPaths = accessors[ k ].paths;
-				if( !accessors[ k ].refreshDue || accessorPaths[ 0 ] === DEFAULT_STATE_PATH || accessorPaths.includes( path ) ) {
+				if( !accessors[ k ].refreshDue ||
+					accessorPaths[ 0 ] === DEFAULT_STATE_PATH ||
+					accessorPaths.includes( path )
+				) {
 					accessors[ k ].refreshDue = true;
 				}
 			}

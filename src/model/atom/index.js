@@ -7,7 +7,7 @@ class Atom {
 	/** @type {Set<number>} */
 	#connections;
 	/** @type {Readonly<Value>} */
-	#value
+	#value;
 
 	constructor() {
 		this.#connections = new Set();
