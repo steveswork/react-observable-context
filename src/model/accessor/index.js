@@ -8,7 +8,11 @@ import set from 'lodash.set';
 import { DEFAULT_STATE_PATH } from '../../constants';
 import { makeReadonly } from '../../utils';
 
-/** @type {(ancestorPath?: string) => {contains: (path: string) => boolean}} */
+/**
+ * Returns function that checks whether its argument is either the ancestorPath or its child/descendant
+ *
+ * @type {(ancestorPath?: string) => {contains: (path: string) => boolean}}
+ */
 const getPathTesterIn = (() => {
 	const PATH_DELIMITERS = { '.': null, '[': null };
 	return ( ancestorPath = '' ) => {
@@ -62,6 +66,22 @@ const mergeChanges = (() => {
 	return mergeChanges;
 })();
 
+/** @type {(paths: Array<string>) => Array<string>} */
+const arrangePaths = paths => {
+	if( paths.includes( DEFAULT_STATE_PATH ) ) {
+		return [ DEFAULT_STATE_PATH ];
+	}
+	/** @type {Array<string>} */
+	const arranged = [];
+	let group = getPathTesterIn();
+	for( const path of clonedeep( paths ).sort() ) {
+		if( group.contains( path ) ) { continue }
+		group = getPathTesterIn( path );
+		arranged.push( path );
+	}
+	return arranged;
+}
+
 /** @template {State} T */
 class Accessor {
 	static #NUM_INSTANCES = 0;
@@ -76,21 +96,6 @@ class Accessor {
 	/** @type {Readonly<PartialState<T>>} */
 	#value;
 
-	/** @type {(paths: Array<string>) => Array<string>} */
-	static #arrangePaths( paths ) {
-		if( !Array.isArray( paths ) || !paths.length ) { paths = [ DEFAULT_STATE_PATH ] }
-		if( paths.includes( DEFAULT_STATE_PATH ) ) { return [ DEFAULT_STATE_PATH ] }
-		/** @type {Array<string>} */
-		const arranged = [];
-		let group = getPathTesterIn();
-		for( const path of clonedeep( paths ).sort() ) {
-			if( group.contains( path ) ) { continue }
-			group = getPathTesterIn( path );
-			arranged.push( path );
-		}
-		return arranged;
-	}
-
 	/**
 	 * @param {T} source State object reference from which the accessedPropertyPaths are to be selected.
 	 * @param {Array<string>} accessedPropertyPaths
@@ -98,7 +103,7 @@ class Accessor {
 	constructor( source, accessedPropertyPaths ) {
 		this.#clients = new Set();
 		this.#id = ++Accessor.#NUM_INSTANCES;
-		this.#paths = Accessor.#arrangePaths( accessedPropertyPaths );
+		this.#paths = arrangePaths( accessedPropertyPaths );
 		/** @type {boolean} */
 		this.refreshDue = true;
 		this.#source = source;
@@ -120,7 +125,7 @@ class Accessor {
 	hasClient( clientId ) { return this.#clients.has( clientId ) }
 
 	/** @type {(clientId: string) => boolean} */
-	removeClient( clientId ) { this.#clients.delete( clientId ) }
+	removeClient( clientId ) { return this.#clients.delete( clientId ) }
 
 	/**
 	 * @param {{[propertyPath: string]: Atom}} atoms Curated slices of state currently requested
@@ -140,6 +145,7 @@ class Accessor {
 			/** @type {PartialState<State>} */
 			let update = {};
 			for( const p of this.#paths ) {
+				if( !( p in atoms ) ) { continue }
 				const atom = atoms[ p ];
 				!atom.isConnected( this.#id ) &&
 				atom.connect( this.#id );

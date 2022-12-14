@@ -182,7 +182,8 @@ const useStore = ( prehooks, value ) => {
 		if( !listeners.size ) {
 			listeners.add( stateWatch );
 		} else {
-			const newList = Array.from( listeners ).unshift( stateWatch );
+			const newList = Array.from( listeners );
+			newList.unshift( stateWatch );
 			listeners.clear();
 			newList.forEach( l => { listeners.add( l ) } );
 		}
