@@ -48,9 +48,21 @@
     "typescript": "^4.8.2"
   },
   "files": [
-    "dist/index.js",
-    "dist/index.d.ts",
-    "index",
+    "dist/constants.js",
+    "dist/constants.d.ts",
+    "dist/main/index.js",
+    "dist/main/index.d.ts",
+    "dist/model/accesor/index.js",
+    "dist/model/accesor/index.d.ts",
+    "dist/model/accessor-cache/index.js",
+    "dist/model/accessor-cache/index.d.ts",
+    "dist/model/atom/index.js",
+    "dist/model/atom/index.d.ts",
+    "dist/utils/index.js",
+    "dist/utils/index.d.ts",
+    "dist/types.js",
+    "dist/types.d.ts",
+    "index.js",
     "package.json"
   ],
   "homepage": "https://github.com/steveswork/react-observable-context#readme",
@@ -84,6 +96,6 @@
     "test": "eslint --fix && jest --updateSnapshot",
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
-  "types": "dist/index.d.ts",
-  "version": "4.0.0"
+  "types": "dist/main/index.d.ts",
+  "version": "4.0.0-alpha.0"
 }

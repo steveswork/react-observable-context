@@ -17,6 +17,12 @@
     "outDir": "dist",
     "skipLibCheck": true
   },
-  // Change this to match your project
+  // Change the following to match your project
+  "exclude": [
+	  "src/**/test",
+		"src/**/test-apps",
+		"src/**/test-artifacts",
+		"src/**/*.test.js"
+  ],
   "include": [ "src/**/*" ]
 }

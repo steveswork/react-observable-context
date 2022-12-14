@@ -3,14 +3,60 @@ var path = require( 'path' );
 var fs = require( 'fs' );
 
 var CHARSET = 'utf8';
-var DIST = path.join( process.cwd(), 'dist', 'index.js' );
+
+/** @type {{fname: string, result: true|Error}} */
+var trimResults = [];
+
+function promisify( fn ) {
+	return function ( ...args ) {
+		return new Promise( function ( resolve, reject ) {
+			fn( ...args, function ( err, data ) {
+				err ? reject( err ) : resolve( data );
+			} );
+		} );
+	};
+};
+var readFile = promisify( fs.readFile.bind( fs ) );
+var writeFile = promisify( fs.writeFile.bind( fs ) );
 
 /** @param {string} code */
 function trimComments( code ) {
 	return code
+		.replace( /\/\*#__PURE__\*\//gm, '' )
 		.replace( /\s*\/\/.*$/gm, '' )
 		.replace( /\s*\/\*\*?(?:[^*]|\*(?!\/))*(?:\*\/|$)/gm, '' )
 		.replace( /(?:^\s*\n)*/gm, '' );
 }
 
-fs.writeFileSync( DIST, trimComments( fs.readFileSync( DIST, CHARSET ) ), CHARSET );
+var EXT_PATTERN = /\.(j|t)s$/;
+
+( function traverse( directory ) {
+	fs.readdirSync( directory, CHARSET ).forEach( function ( entry ) {
+		var fPath = path.join( directory, entry );
+		if( fs.statSync( fPath ).isDirectory() ) {
+			return traverse( fPath );
+		}
+		EXT_PATTERN.test( fPath ) && trimResults.push(
+			readFile( fPath, CHARSET )
+				.then( function ( f ) {
+					return writeFile( fPath, trimComments( f ), CHARSET )
+						.then( function () { return { fname: fPath, result: true } } )
+						.catch( function ( e ) { return { fname: fPath, result: e } } )
+				} )
+				.catch( function ( e ) { return { fname: fPath, result: e } } )
+		);
+	} );
+} )( path.join( process.cwd(), 'dist' ) );
+
+Promise.all( trimResults ).then( function ( results ) {
+	var errorResults = results.filter( function ( r ) { return r.result !== true } );
+	if( errorResults.length ) {
+		console.log( '\nFollowing errors were encountered while trimming comments from dist source files: ' );
+		for( const e of errorResults ) {
+			console.log( e.fname + ': ' );
+			console.dir( e.result );
+			console.log( '.'.repeat( 16 ) );
+		}
+	}
+	console.log( '\nPost build completed @ ', new Date().toString() );
+} );
