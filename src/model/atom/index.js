@@ -14,11 +14,7 @@ class Atom {
 		this.#value = makeReadonly({});
 	}
 
-	/** @returns {Readonly<Value>} */
 	get value() { return this.#value }
-
-	/** @param {Value} newValue */
-	set value( newValue ) { this.#value = makeReadonly( clonedeep( newValue ) ) }
 
 	/**
 	 * @param {number} accessorId
@@ -40,6 +36,9 @@ class Atom {
 
 	/** @param {number} accessorId */
 	isConnected( accessorId ) { return this.#connections.has( accessorId ) }
+
+	/** @param {Value|Readonly<Value>} newValue */
+	setValue( newValue ) { this.#value = makeReadonly( clonedeep( newValue ) ) }
 }
 
 export default Atom;

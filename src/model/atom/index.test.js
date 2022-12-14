@@ -4,18 +4,18 @@ describe( 'Atom class', () => {
 	/** @type {Atom} */
 	let atom;
 	beforeAll(() => { atom = new Atom() })
-	test( 'to creates an atom', () => expect( atom ).toBeInstanceOf( Atom ) );
+	test( 'creates an atom', () => expect( atom ).toBeInstanceOf( Atom ) );
 	describe( 'value property', () => {
 		test( 'is empty object by default', () => expect( atom.value ).toEqual({}) );
 		test( 'is readonly', () => expect(() => { atom.value.testFlag = true }).toThrow(
 			'Cannot add property testFlag, object is not extensible'
 		) );
 		test( 'converts all assignments to readonly', () => {
-			atom.value = { testFlag: true };
+			atom.setValue({ testFlag: true });
 			expect(() => { atom.value.testFlag = false }).toThrow(
 				"Cannot assign to read only property 'testFlag' of object '#<Object>'"
 			);
-			atom.value = { a: { b: { c: [ 1, 2, 3, { testFlag: true } ] } } };
+			atom.setValue({ a: { b: { c: [ 1, 2, 3, { testFlag: true } ] } } });
 			expect(() => { atom.value.a.b.c[ 1 ] = expect.anything() }).toThrow(
 				"Cannot assign to read only property '1' of object '[object Array]'"
 			);

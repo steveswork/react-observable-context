@@ -35,8 +35,9 @@ class AccessorCache {
 		const accessor = new Accessor( this.#origin, propertyPaths );
 		this.#accessors[ cacheKey ] = accessor;
 		for( const path of accessor.paths ) {
-			if( path in atoms || path === DEFAULT_STATE_PATH ) { continue }
+			if( path in atoms ) { continue }
 			atoms[ path ] = new Atom();
+			atoms[ path ].setValue( get( this.#origin, path ) );
 		}
 		return this.#accessors[ cacheKey ];
 	}
@@ -50,7 +51,8 @@ class AccessorCache {
 	 * @return {Readonly<PartialState<T>>}
 	 */
 	get( clientId, ...propertyPaths ) {
-		const cacheKey = JSON.stringify( isEmpty( propertyPaths ) ? [ DEFAULT_STATE_PATH ] : propertyPaths );
+		if( isEmpty( propertyPaths ) ) { propertyPaths = [ DEFAULT_STATE_PATH ] }
+		const cacheKey = JSON.stringify( propertyPaths );
 		const accessor = cacheKey in this.#accessors
 			? this.#accessors[ cacheKey ]
 			: this.#createAccessor( cacheKey, propertyPaths );
@@ -88,7 +90,7 @@ class AccessorCache {
 		const atoms = this.#atoms;
 		for( const path in atoms ) {
 			if( !has( newChanges, path ) ) { continue }
-			atoms[ path ].value = get( this.#origin, path );
+			atoms[ path ].setValue( get( this.#origin, path ) );
 			for( const k in accessors ) {
 				const accessorPaths = accessors[ k ].paths;
 				if( !accessors[ k ].refreshDue ||
