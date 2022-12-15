@@ -13,14 +13,14 @@ import React, {
 
 import clonedeep from 'lodash.clonedeep';
 import has from 'lodash.has';
-import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
-import isPlainObject from 'lodash.isplainobject';
 import omit from 'lodash.omit';
 
 import { v4 as uuid } from 'uuid';
 
 import AccessorCache from '../model/accessor-cache';
+
+import _setState from './set-state';
 
 export class UsageError extends Error {}
 
@@ -34,60 +34,6 @@ const defaultPrehooks = Object.freeze({});
 const reportNonReactUsage = () => {
 	throw new UsageError( 'Detected usage outside of this context\'s Provider component tree. Please apply the exported Provider component' );
 };
-
-const _setState = (() => {
-	const initDiff = ( propKey, changed, replaced ) => {
-		changed[ propKey ] = {};
-		replaced[ propKey ] = {};
-	};
-	const setAtomic = ( state, newState, changed, replaced, stateKey ) => {
-		if( isEqual( state[ stateKey ], newState[ stateKey ] ) ) { return }
-		const isArrayNewState = Array.isArray( newState[ stateKey ] );
-		if( Array.isArray( state[ stateKey ] ) && isArrayNewState ) {
-			return setArray( state, newState, changed, replaced, stateKey );
-		}
-		const isPlainObjectNewState = isPlainObject( newState[ stateKey ] );
-		if( isPlainObject( state[ stateKey ] ) && isPlainObjectNewState ) {
-			return setPlainObject( state, newState, changed, replaced, stateKey )
-		}
-		if( stateKey in state ) {
-			replaced[ stateKey ] = state[ stateKey ];
-		}
-		state[ stateKey ] = isArrayNewState || isPlainObjectNewState
-			? clonedeep( newState[ stateKey ] )
-			: newState[ stateKey ];
-		changed[ stateKey ] = newState[ stateKey ];
-	};
-	const setArray = ( state, newState, changed, replaced, rootKey ) => {
-		initDiff( rootKey, changed, replaced );
-		for( let i = 0, len = newState[ rootKey ].length; i < len; i++ ) {
-			setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], i );
-		}
-	};
-	const setPlainObject = ( state, newState, changed, replaced, rootKey ) => {
-		initDiff( rootKey, changed, replaced );
-		set( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ] );
-	};
-	const set = ( state, newState, changed = {}, replaced = {} ) => {
-		for( const k in newState ) {
-			setAtomic( state, newState, changed, replaced, k );
-		}
-	};
-	/**
-	 * @param {T} state
-	 * @param {PartialState<T>} newState
-	 * @param {Listener<T>} onStateChange
-	 * @template {State} T
-	 */
-	return ( state, newState, onStateChange ) => {
-		/** @type {PartialState<T>} */
-		const newChanges = {};
-		/** @type {PartialState<T>} */
-		const replacedValue = {};
-		set( state, newState, newChanges, replacedValue );
-		!isEmpty( newChanges ) && onStateChange( newChanges, replacedValue );
-	};
-})();
 
 /**
  * @param {Prehooks<T>} prehooks
@@ -314,7 +260,7 @@ export const useContext = ( context, watchedKeys = [] ) => {
 /** @typedef {Context<IStore>} IObservableContext */
 
 /**
- * @typedef {(newValue: PartialState<T>, oldValue: PartialState<T>) => void} Listener
+ * @typedef {import("../types").Listener<T>} Listener
  * @template {State} T
  */
 
