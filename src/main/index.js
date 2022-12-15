@@ -11,8 +11,8 @@ import React, {
 	useState
 } from 'react';
 
-import clonedeep from 'lodash.clonedeep';
-import has from 'lodash.has';
+import clonedeep from 'lodash.clonedeep'
+;import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 import omit from 'lodash.omit';
 
@@ -21,6 +21,10 @@ import { v4 as uuid } from 'uuid';
 import AccessorCache from '../model/accessor-cache';
 
 import _setState from './set-state';
+
+const FULL_STATE_SELECTOR = '@@STATE';
+
+const NULL_STATE_SELECTOR = '';
 
 export class UsageError extends Error {}
 
@@ -46,6 +50,34 @@ const usePrehooksRef = prehooks => {
 };
 
 /**
+ * @param {string[]} renderKeys
+ * @returns {string[]}
+ */
+const useRenderKeysManager = renderKeys => {
+
+	const curKeys = useRef([]);
+
+	const managedKeys = useMemo(() => {
+		if( !isEqual( curKeys.current, renderKeys ) ) {
+			curKeys.current = renderKeys;
+		}
+		return curKeys.current;
+	}, [ renderKeys ]);
+
+	return useMemo(() => {
+		const selectors = Array.isArray( managedKeys )
+			? Array.from( new Set( managedKeys ) )
+			: []
+		if( isEmpty( selectors ) ) {
+			selectors[ 0 ] = NULL_STATE_SELECTOR; // empty string propertyPath causes the state-manager getState to return `undefined`
+		} else if( managedKeys.includes( FULL_STATE_SELECTOR ) ) {
+			selectors.length = 0; // no propertyPath argument causes state-manager getState to return complete state
+		}
+		return selectors;
+	}, [ managedKeys ]);
+};
+
+/**
  * @param {T} initStateValue
  * @template {State} T
  */
@@ -60,7 +92,7 @@ const useStateManager = initStateValue => {
 	const stateWatch = useCallback( cache.watchSource.bind( cache ), [] );
 	/** @type {StoreInternal<T>["unlinkCache"]} */
 	const unlink = useCallback( clientId => cache.unlinkClient( clientId ), [] );
-	return { select, state, stateWatch, unlink };
+	return useState(() => ({ select, state, stateWatch, unlink }))[ 0 ];
 };
 
 /**
@@ -82,7 +114,7 @@ const useStore = ( prehooks, value ) => {
 	const [ listeners ] = useState(() => new Set());
 
 	/** @type {Listener<T>} */
-	const onChange = ( newValue, oldValue ) => listeners.forEach( listener => listener( newValue, oldValue ) );
+	const onChange = state => listeners.forEach( listener => listener( state ) );
 
 	/** @type {StoreInternal<T>["resetState"]} */
 	const resetState = useCallback(() => {
@@ -136,12 +168,9 @@ const useStore = ( prehooks, value ) => {
 		return () => listeners.delete( stateWatch );
 	}, [ stateWatch ]);
 
-	/** @type {[StoreInternal<T>, Function]} */
-	const [ store ] = useState(() => ({
+	return useState(() => ({
 		getState: select, resetState, setState, subscribe, unlinkCache: unlink
-	}));
-
-	return store;
+	}))[ 0 ];
 };
 
 /** @type {FC<{child: ReactNode}>} */
@@ -217,43 +246,47 @@ export const createContext = () => {
  * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
  *
  * @param {ObservableContext<T>} context
- * @param {Array<string|keyof T>} [watchedKeys = []] A list of state object property paths to watch. A change in any of the referenced properties results in this component render.
+ * @param {Array<string|keyof T>} [renderKeys = []] a list of paths to state object properties used by this component: see examples below. May use `['@@STATE']` to indicate a desire to obtain the entire state object. A change in any of the referenced properties results in this component render. When using `['@@STATE']`, any change in the state object results in this component render.
  * @returns {Store<T>}
  * @template {State} T
+ * @example
+ * a valid renderKey follows the `lodash` object property path convention.
+ * for a state = { a: 1, b: 2, c: 3, d: { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] } }
+ * Any of the following is a valid renderKey
+ * 'a' => 1 // same applies to 'b' = 2; 'c' = 3
+ * 'd' => { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] }
+ * 'd.e' => 5
+ * 'd.e.f => [6, { x: 7, y: 8, z: 9 } ]
+ * 'd.e.f[0]' or 'd.e.f.0' => 6
+ * 'd.e.f[1]' or 'd.e.f.1' => { x: 7, y: 8, z: 9 }
+ * 'd.e.f[1].x' or 'd.e.f.1.x' => 7 // same applies to 'd.e.f[1].y' = 8; 'd.e.f[1].z' = 9
+ * '@@STATE' => state
  */
-export const useContext = ( context, watchedKeys = [] ) => {
+export const useContext = ( context, renderKeys = [] ) => {
 
 	/** @type {StoreInternal<T>} */
-	const { getState: _getState, unlinkCache, ...store } = _useContext( context );
-
-	const [ , tripRender ] = useState( false );
+	const { getState: _getState, subscribe, unlinkCache, ...store } = _useContext( context );
 
 	const [ clientId ] = useState( uuid );
 
-	const watched = useMemo(() => (
-		Array.isArray( watchedKeys )
-			? Array.from( new Set( watchedKeys ) )
-			: []
-	), [ watchedKeys ]);
+	const _renderKeys = useRenderKeysManager( renderKeys );
 
-	useEffect(() => {
-		if( !watched.length ) { return }
-		return store.subscribe( newChanges => {
-			watched.some( w => has( newChanges, w ) ) &&
-			tripRender( s => !s );
-		} );
-	}, [ watched ]);
+	/** @returns {Readonly<PartialState<T>>} */
+	const getState = () => _getState( clientId, ..._renderKeys );
+
+	const [ data, setData ] = useState( getState );
+
+	useMemo(() => setData( getState() ), [ _renderKeys ]); // re-initialize data states
+
+	useEffect(() => subscribe(() => setData( getState() )), [ _renderKeys ]);
 
 	useEffect(() => () => unlinkCache( clientId ), []);
 
-	/** @type {Store<T>["getState"]} */
-	const getState = useCallback(( ...propertyPaths ) => _getState( clientId, ...propertyPaths ), []);
-
-	return { getState, ...store };
+	return useMemo(() => ({ data, ...store }), [ data ]);
 };
 
 /**
- * @typedef {IObservableContext & Context<Store<T>>} ObservableContext
+ * @typedef {IObservableContext|Context<Store<T>>} ObservableContext
  * @template {State} T
  */
 
@@ -280,26 +313,24 @@ export const useContext = ( context, watchedKeys = [] ) => {
  */
 
 /**
- * @typedef {Store<T> & {
+ * @typedef {{[K in "resetState"|"setState"]: Store<T>[K]} & {
  * 		getState: (clientId: string, ...propertyPaths?: string[]) => Readonly<PartialState<T>>,
+ *		subscribe: (listener: Listener<T>) => Unsubscribe
  * 		unlinkCache: (clientId: string) => void
  * }} StoreInternal
  * @template {State} T
  */
 
 /**
- * @typedef {IStore & {
- *   getState: (...propertyPaths?: string[]) => Readonly<PartialState<T>>,
- *   resetState: VoidFunction,
- *   setState: (changes: PartialState<T>) => void,
- *   subscribe: (listener: Listener<T>) => Unsubscribe
+ * @typedef {{
+ *		data: PartialState<T>,
+ *		resetState: VoidFunction,
+ *		setState: (changes: PartialState<T>) => void,
  * }} Store
  * @template {State} T
  */
 
-/** @typedef {{[K in IStoreKeys]: typeof reportNonReactUsage}} IStore */
-
-/** @typedef {"getState"|"resetState"|"setState"|"subscribe"} IStoreKeys */
+/** @typedef {{[K in "getState"|"resetState"|"setState"|"subscribe"]: typeof reportNonReactUsage}} IStore */
 
 /** @typedef {VoidFunction} Unsubscribe */
 

@@ -1,6 +1,6 @@
 import get from 'lodash.get';
-import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
+import isEqual from 'lodash.isequal';
 
 import { DEFAULT_STATE_PATH } from '../../constants';
 
@@ -80,26 +80,25 @@ class AccessorCache {
 		}
 	}
 
-	/**
-	 * Observes the origin state bearing ObservableContext store for state changes to update accessors.
-	 *
-	 * @param {PartialState<T>} newChanges
-	 */
-	watchSource( newChanges ) {
+	/** Observes the origin state bearing ObservableContext store for state changes to update accessors. */
+	watchSource() {
 		const accessors = this.#accessors;
 		const atoms = this.#atoms;
+		const state = this.#origin;
+		const updatedPaths = {};
 		for( const path in atoms ) {
-			if( !has( newChanges, path ) ) { continue }
-			atoms[ path ].setValue( get( this.#origin, path ) );
-			for( const k in accessors ) {
-				const accessorPaths = accessors[ k ].paths;
-				if( !accessors[ k ].refreshDue ||
-					accessorPaths[ 0 ] === DEFAULT_STATE_PATH ||
-					accessorPaths.includes( path )
-				) {
-					accessors[ k ].refreshDue = true;
-				}
-			}
+			const newAtomVal = get( state, path );
+			if( isEqual( newAtomVal, atoms[ path ].value ) ) { continue }
+			atoms[ path ].setValue( newAtomVal );
+			updatedPaths[ path ] = true;
+		}
+		if( isEmpty( updatedPaths ) ) { return }
+		for( const k in accessors ) {
+			if( accessors[ k ].refreshDue ) { continue }
+			const accessorPaths = accessors[ k ].paths;
+			accessors[ k ].refreshDue =
+				accessorPaths[ 0 ] === DEFAULT_STATE_PATH ||
+				accessorPaths.some( p => p in updatedPaths );
 		}
 	}
 }

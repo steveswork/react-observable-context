@@ -9,7 +9,6 @@
   "dependencies": {
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
-    "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isplainobject": "^4.0.6",
@@ -52,6 +51,8 @@
     "dist/constants.d.ts",
     "dist/main/index.js",
     "dist/main/index.d.ts",
+    "dist/main/set-state/index.js",
+    "dist/main/set-state/index.d.ts",
     "dist/model/accesor/index.js",
     "dist/model/accesor/index.d.ts",
     "dist/model/accessor-cache/index.js",

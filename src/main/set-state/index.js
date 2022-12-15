@@ -1,5 +1,4 @@
 import clonedeep from 'lodash.clonedeep';
-import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 import isPlainObject from 'lodash.isplainobject';
 
@@ -12,61 +11,31 @@ const isIndexBasedObj = obj => Object.keys( obj ).every( k => {
 /**
  * Mutates its arguments
  *
- * @param {K} propKey
- * @param {HasObjectRoot<K>} replaced The values replaced by the changes are recorded here
- * @param {HasObjectRoot<K>} changed All new changes applied to the state during this call are recorded here
- * @template {KeyTypes} K
- */
-function initDiff( propKey, changed, replaced ) {
-	changed[ propKey ] = {};
-	replaced[ propKey ] = {};
-};
-
-/**
- * Mutates map object - removes map entry at key if empty.
- *
- * @param {HasObjectRoot<K>} map
- * @param {K} key
- * @template {KeyTypes} K
- */
-function sanitizeEntryAt( map, key ) {
-	if( isEmpty( map[ key ] ) ) {
-		delete map[ key ];
-	}
-}
-
-/**
- * Mutates its arguments
- *
  * @param {HasArrayRoot<K>|HasObjectRoot<K>} state
  * @param {HasArrayRoot<K>|HasObjectRoot<K>} newState
- * @param {HasObjectRoot<K>} replaced The values replaced by the changes are recorded here
- * @param {HasObjectRoot<K>} changed All new changes applied to the state during this call are recorded here
  * @param {K} stateKey
+ * @param {Stats} stats
  * @template {KeyTypes} K
  */
-function setAtomic( state, newState, changed, replaced, stateKey ) {
+function setAtomic( state, newState, stateKey, stats ) {
 	if( isEqual( state[ stateKey ], newState[ stateKey ] ) ) { return }
 	const isPlainObjectNewState = isPlainObject( newState[ stateKey ] );
 	const isArrayNewState = Array.isArray( newState[ stateKey ] );
 	if( Array.isArray( state[ stateKey ] ) ) {
 		if( isArrayNewState ) {
-			return setArray( state, newState, changed, replaced, stateKey );
+			return setArray( state, newState, stateKey, stats );
 		}
 		if( isPlainObjectNewState && isIndexBasedObj( newState[ stateKey ] ) ) {
-			return setArrayIndex( state, newState, changed, replaced, stateKey );
+			return setArrayIndex( state, newState, stateKey, stats );
 		}
 	}
 	if( isPlainObjectNewState && isPlainObject( state[ stateKey ] ) ) {
-		return setPlainObject( state, newState, changed, replaced, stateKey )
+		return setPlainObject( state, newState, stateKey, stats )
 	}
-	if( stateKey in state ) {
-		replaced[ stateKey ] = state[ stateKey ];
-	}
+	stats.hasChanges = true;
 	state[ stateKey ] = isArrayNewState || isPlainObjectNewState
 		? clonedeep( newState[ stateKey ] )
 		: newState[ stateKey ];
-	changed[ stateKey ] = newState[ stateKey ];
 };
 
 /**
@@ -74,23 +43,18 @@ function setAtomic( state, newState, changed, replaced, stateKey ) {
  *
  * @param {HasArrayRoot<K>} state
  * @param {HasArrayRoot<K>} newState
- * @param {HasObjectRoot<K>} replaced The values replaced by the changes are recorded here
- * @param {HasObjectRoot<K>} changed All new changes applied to the state during this call are recorded here
  * @param {K} rootKey
+ * @param {Stats} stats
  * @template {KeyTypes} K
  */
-function setArray( state, newState, changed, replaced, rootKey ) {
-	initDiff( rootKey, changed, replaced );
-	const sLength = state[ rootKey ].length;
+function setArray( state, newState, rootKey, stats ) {
 	const nsLength = newState[ rootKey ].length;
-	if( sLength > nsLength ) { // capture excess state values into `replaced` list prior to state truncation
-		for( let i = nsLength; i < sLength; i++ ) {
-			replaced[ rootKey ][ i ] = state[ rootKey ][ i ];
-		}
+	if( state[ rootKey ].length !== nsLength ) {
+		state[ rootKey ].length = nsLength;
+		stats.hasChanges = true;
 	}
-	state[ rootKey ].length = nsLength;
 	for( let i = 0; i < nsLength; i++ ) {
-		setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], i );
+		setAtomic( state[ rootKey ], newState[ rootKey ], i, stats );
 	}
 };
 
@@ -99,27 +63,20 @@ function setArray( state, newState, changed, replaced, rootKey ) {
  *
  * @param {HasArrayRoot<K>} state
  * @param {HasObjectRoot<K>} newState
- * @param {HasObjectRoot<K>} replaced The values replaced by the changes are recorded here
- * @param {HasObjectRoot<K>} changed All new changes applied to the state during this call are recorded here
  * @param {K} rootKey
+ * @param {Stats} stats
  * @template {KeyTypes} K
  */
-function setArrayIndex( state, newState, changed, replaced, rootKey ) {
-	initDiff( rootKey, changed, replaced );
+function setArrayIndex( state, newState, rootKey, stats ) {
 	const incomingIndexes = Object.keys( newState[ rootKey ] ).map( i => +i );
 	const maxIncomingIndex = Math.max( ...incomingIndexes );
 	if( maxIncomingIndex >= state[ rootKey ].length ) { // capture all newly created state array indexes into `changed` list
-		let i = state[ rootKey ].length;
 		state[ rootKey ].length = maxIncomingIndex + 1;
-		for( const len = state[ rootKey ].length; i < len; i++ ) {
-			changed[ rootKey ][ i ] = state[ rootKey ][ i ];
-		}
+		stats.hasChanges = true;
 	}
 	for( const i of incomingIndexes ) {
-		setAtomic( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ], i );
+		setAtomic( state[ rootKey ], newState[ rootKey ], i, stats );
 	}
-	sanitizeEntryAt( changed, rootKey );
-	sanitizeEntryAt( replaced, rootKey );
 };
 
 /**
@@ -127,14 +84,12 @@ function setArrayIndex( state, newState, changed, replaced, rootKey ) {
  *
  * @param {HasObjectRoot<K>} state
  * @param {HasObjectRoot<K>} newState
- * @param {HasObjectRoot<K>} changed All new changes applied to the state during this call are recorded here
- * @param {HasObjectRoot<K>} replaced The values replaced by the changes are recorded here
  * @param {K} rootKey
+ * @param {Stats} stats
  * @template {KeyTypes} K
  */
-function setPlainObject( state, newState, changed, replaced, rootKey ) {
-	initDiff( rootKey, changed, replaced );
-	set( state[ rootKey ], newState[ rootKey ], changed[ rootKey ], replaced[ rootKey ] );
+function setPlainObject( state, newState, rootKey, stats ) {
+	set( state[ rootKey ], newState[ rootKey ], stats );
 };
 
 /**
@@ -142,28 +97,24 @@ function setPlainObject( state, newState, changed, replaced, rootKey ) {
  *
  * @param {HasObjectRoot} state
  * @param {HasObjectRoot} newState
- * @param {HasObjectRoot} [changed] All new changes applied to the state during this call are recorded here
- * @param {HasObjectRoot} [replaced] The values replaced by the changes are recorded here
+ * @param {Stats} stats
  */
-function set( state, newState, changed = {}, replaced = {} ) {
+function set( state, newState, stats ) {
 	for( const k in newState ) {
-		setAtomic( state, newState, changed, replaced, k );
+		setAtomic( state, newState, k, stats );
 	}
 };
 
 /**
  * @param {T} state
  * @param {PartialState<T>} newState
- * @param {Listener<T>} onStateChange
+ * @param {Listener<T>} [onStateChange]
  * @template {State} T
  */
 function setState( state, newState, onStateChange ) {
-	/** @type {PartialState<T>} */
-	const newChanges = {};
-	/** @type {PartialState<T>} */
-	const replacedValue = {};
-	set( state, newState, newChanges, replacedValue );
-	!isEmpty( newChanges ) && onStateChange( newChanges, replacedValue );
+	const stats = { hasChanges: false };
+	set( state, newState, stats );
+	stats.hasChanges && onStateChange?.( state );
 };
 
 export default setState;
@@ -202,3 +153,5 @@ export default setState;
  */
 
 /** @typedef {import("../../types").State} State */
+
+/** @typedef {{hasChanges: boolean}} Stats */

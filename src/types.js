@@ -1,7 +1,7 @@
 export default null;
 
 /**
- * @typedef {(newValue: PartialState<T>, oldValue: PartialState<T>) => void} Listener
+ * @typedef {(state: PartialState<T>) => void} Listener
  * @template {State} T
  */
 

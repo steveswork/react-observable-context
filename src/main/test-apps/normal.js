@@ -25,11 +25,11 @@ const TALLY_DISPLAY_CONTEXT_KEYS = [ 'color', 'price', 'type' ];
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { getState } = useObservableContext( TALLY_DISPLAY_CONTEXT_KEYS );
+	const { data } = useObservableContext( TALLY_DISPLAY_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
-	const { color, type, price } = getState( ...TALLY_DISPLAY_CONTEXT_KEYS );
+	const { color, type, price } = data;
 
 	return (
 		<div>
@@ -101,7 +101,7 @@ export const ProductDescription = () => {
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 
-	const { color, type } = store.getState( ...PRODUCT_DESC_CONTEXT_KEYS );
+	const { color, type } = store.data;
 
 	return (
 		<div style={{ fontSize: 24 }}>
@@ -116,11 +116,11 @@ const PRICE_STICKER_CONTEXT_KEYS = [ 'price' ];
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const { getState } = useObservableContext( PRICE_STICKER_CONTEXT_KEYS );
+	const { data } = useObservableContext( PRICE_STICKER_CONTEXT_KEYS );
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
-	const { price } = getState( ...PRICE_STICKER_CONTEXT_KEYS );
+	const { price } = data;
 
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
