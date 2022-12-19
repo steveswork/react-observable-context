@@ -1,4 +1,6 @@
-const createSourceData = () => ({
+import clonedeep from 'lodash.clonedeep';
+
+const sourceData = {
 	_id: '639737cc5ac1df69cda79413',
 	about: 'Eu deserunt proident id id eu veniam enim qui nostrud eu sit. Aliquip pariatur non cillum adipisicing nisi officia culpa commodo fugiat anim. Exercitation culpa id esse incididunt nostrud non adipisicing laboris labore ullamco. Consectetur Lorem culpa veniam cillum laboris irure aliquip qui sit dolore aute nostrud veniam.\r\n',
 	address: '760 Midwood Street, Harborton, Massachusetts, 7547',
@@ -82,6 +84,11 @@ const createSourceData = () => ({
 		'laborum',
 		'proident'
 	]
-});
+};
+
+/** @returns {SourceData} */
+const createSourceData = () => clonedeep( sourceData );
 
 export default createSourceData;
+
+/** @typedef {typeof sourceData} SourceData */
