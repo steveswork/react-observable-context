@@ -5,7 +5,9 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import '@testing-library/jest-dom';
 
-import { UsageError } from '.';
+import { createContext, UsageError, useContext } from '.';
+
+import createSourceData from '../test-artifacts/data/create-state-obj';
 
 import AppNormal, { Product, TallyDisplay } from './test-apps/normal';
 import AppWithPureChildren from './test-apps/with-pure-children';
@@ -177,7 +179,7 @@ describe( 'ReactObservableContext', () => {
 				render( <AppWithPureChildren /> );
 				let baseRenderCount;
 				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
-				fireEvent.keyUp( screen.getByLabelText( 'Type:', { key: 'A', code: 'KeyA' } ) );
+				fireEvent.keyUp( screen.getByLabelText( 'Type:' ), { target: { value: 'A' } } );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
 					expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
@@ -209,7 +211,7 @@ describe( 'ReactObservableContext', () => {
 				render( <AppNormal /> );
 				let baseRenderCount;
 				await wait(() => { baseRenderCount = tranformRenderCount( renderCount ); });
-				fireEvent.keyUp( screen.getByLabelText( 'Type:', { key: 'A', code: 'KeyA' } ) );
+				fireEvent.keyUp( screen.getByLabelText( 'Type:' ), { target: { value: 'A' } } );
 				await wait(() => {
 					const netCount = tranformRenderCount( renderCount, baseRenderCount );
 					expect( netCount.PriceSticker ).toBe( 0 ); // unaffected: no use for productType data
@@ -381,4 +383,173 @@ describe( 'ReactObservableContext', () => {
 			} );
 		} );
 	} );
+	describe( 'API', () => {
+		describe( 'createContext(...)', () => {
+			test( 'returns observable context provider', () => {
+				const context = createContext();
+				expect( context._currentValue ).toEqual({
+					getState: expect.any( Function ),
+					resetState: expect.any( Function ),
+					setState: expect.any( Function ),
+					subscribe: expect.any( Function )
+				});
+				expect( context._defaultValue ).toBeNull();
+				expect( context.Consumer ).toBeInstanceOf( Object );
+				expect( context.Provider ).toBeInstanceOf( Function );
+			} );
+		} );
+		describe( 'useContext(...)', () => {
+			const CACHED_INITIAL_STATE = { mockValue: 1 };
+			let Context, storage, Wrapper;
+			beforeAll(() => {
+				storage = {
+					getItem: jest.fn().mockReturnValue( CACHED_INITIAL_STATE ),
+					removeItem: jest.fn(),
+					setItem: jest.fn()
+				};
+				Context = createContext();
+				/* eslint-disable react/display-name */
+				Wrapper = ({ children }) => (
+					<Context.Provider
+						storage={ storage }
+						value={ createSourceData() }
+					>
+						{ children }
+					</Context.Provider>
+				);
+				Wrapper.displayName = 'Wrapper';
+				/* eslint-disable react/display-name */
+			});
+			test( 'returns a observable context store', () => {
+				/** @type {Store<SourceData>} */
+				let store;
+				const Client = () => {
+					store = useContext( Context, [ 'tags' ] );
+					return null;
+				};
+				render( <Wrapper><Client /></Wrapper> );
+				expect( store ).toEqual({
+					data: expect.any( Object ),
+					resetState: expect.any( Function ),
+					setState: expect.any( Function )
+				});
+			} );
+			describe( 'store data', () => {
+				test( 'carries the latest state data as referenced by the renderKeys', async () => {
+					/** @type {Store<SourceData>} */
+					let store;
+					const Client = () => {
+						store = useContext( Context, [
+							'history.places[2].city',
+							'history.places[2].country',
+							'history.places[2].year',
+							'isActive',
+							'tags[5]',
+							'tags[6]'
+						]);
+						return null;
+					}
+					render( <Wrapper><Client /></Wrapper> );
+					expect( store.data ).toEqual({
+						history: {
+							places: [ undefined, undefined, {
+								city: 'Miami',
+								country: 'US',
+								year: '2017'
+							} ]
+						},
+						isActive: false,
+						tags: [ undefined, undefined, undefined, undefined, undefined, 'laborum', 'proident' ]
+					});
+					store.setState({
+						isActive: true,
+						history: {
+							places: {
+								2: {
+									city: 'Marakesh',
+									country: 'Morocco'
+								}
+							}
+						}
+					});
+					await new Promise( resolve => setTimeout( resolve, 10 ) );
+					expect( store.data ).toEqual({
+						history: {
+							places: [ undefined, undefined, {
+								city: 'Marakesh',
+								country: 'Morocco',
+								year: '2017'
+							} ]
+						},
+						isActive: true,
+						tags: [ undefined, undefined, undefined, undefined, undefined, 'laborum', 'proident' ]
+					});
+				} );
+				test( 'holds the complete current state object whenever `@@STATE` appears in the renderKeys', async () => {
+					/** @type {Store<SourceData>} */
+					let store;
+					const Client = () => {
+						store = useContext( Context, [
+							'history.places[2].city',
+							'history.places[2].country',
+							'history.places[2].year',
+							'isActive',
+							'tags[5]',
+							'tags[6]',
+							'@@STATE'
+						]);
+						return null;
+					}
+					render( <Wrapper><Client /></Wrapper> );
+					expect( store.data ).toEqual( createSourceData() );
+					store.setState({
+						isActive: true,
+						history: {
+							places: {
+								2: {
+									city: 'Marakesh',
+									country: 'Morocco'
+								}
+							}
+						}
+					});
+					await new Promise( resolve => setTimeout( resolve, 10 ) );
+					const updatedDataEquiv = createSourceData();
+					updatedDataEquiv.history.places[ 2 ].city = 'Marakesh';
+					updatedDataEquiv.history.places[ 2 ].country = 'Morocco';
+					updatedDataEquiv.isActive = true;
+					expect( store.data ).toEqual( updatedDataEquiv );
+				} );
+				test( 'holds an empty object when no renderKeys provided', async () => {
+					/** @type {Store<SourceData>} */
+					let store;
+					const Client = () => {
+						store = useContext( Context );
+						return null;
+					}
+					render( <Wrapper><Client /></Wrapper> );
+					expect( store.data ).toEqual({});
+					store.setState({ // can still update state
+						isActive: true,
+						history: {
+							places: {
+								2: {
+									city: 'Marakesh',
+									country: 'Morocco'
+								}
+							}
+						}
+					});
+					await new Promise( resolve => setTimeout( resolve, 10 ) );
+					expect( store.data ).toEqual({});
+				} );
+			} );
+		} );
+	} );
 } );
+
+/** @typedef {import("../test-artifacts/data/create-state-obj").SourceData} SourceData */
+/**
+ * @typedef {import("../types").Store<T>} Store
+ * @template {import("../types").State} T
+ */

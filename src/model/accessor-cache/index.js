@@ -92,7 +92,14 @@ class AccessorCache {
 			atoms[ path ].setValue( newAtomVal );
 			updatedPaths[ path ] = true;
 		}
-		if( isEmpty( updatedPaths ) ) { return }
+		if( isEmpty( updatedPaths ) ) { // account for DEFAULT_STATE_PATH (which does not use atoms)
+			for( const k in accessors ) {
+				if( accessors[ k ].paths[ 0 ] === DEFAULT_STATE_PATH ) {
+					accessors[ k ].refreshDue = true;
+				}
+			}
+			return;
+		}
 		for( const k in accessors ) {
 			if( accessors[ k ].refreshDue ) { continue }
 			const accessorPaths = accessors[ k ].paths;

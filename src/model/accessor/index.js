@@ -1,8 +1,6 @@
 import clonedeep from 'lodash.clonedeep';
-import get from 'lodash.get';
 import isEqual from 'lodash.isequal';
 import isPlainObject from 'lodash.isplainobject';
-import pick from 'lodash.pick';
 import set from 'lodash.set';
 
 import { DEFAULT_STATE_PATH } from '../../constants';
@@ -39,30 +37,32 @@ const mergeChanges = (() => {
 		if( isPlainObject( slice ) && isPlainObject( changes ) ) { return Object }
 	};
 	const doMergeAt = ( key, slice, changes ) => {
+		if( isEqual( slice[ key ], changes[ key ] ) ) { return }
 		if( Object.isFrozen( changes[ key ] ) ) { slice[ key ] = changes[ key ]; return }
 		if( Object.isFrozen( slice[ key ] ) ) { slice[ key ] = { ...slice[ key ] } }
 		switch( matchCompositeType( slice[ key ], changes[ key ] ) ) {
-			case Object: mergeChanges( slice[ key ], changes[ key ] ); break;
+			case Object: runMerger( slice[ key ], changes[ key ] ); break;
 			case Array:
 				slice[ key ].length = changes[ key ].length;
-				mergeChanges( slice[ key ], changes[ key ] );
+				runMerger( slice[ key ], changes[ key ] );
 				break;
 			default: slice[ key ] = changes[ key ];
 		}
 	};
-	/**
-	 * @param {PartialState<State>|Readonly<PartialState<State>} slice
-	 * @param {PartialState<State>} changes
-	 */
-	const mergeChanges = ( slice, changes ) => {
+	const runMerger = ( slice, changes ) => {
 		if( isPlainObject( changes ) ) { // `changes`, at the start of the recursion, is a plainobject
 			for( const k in changes ) { doMergeAt( k, slice, changes ) }
 		} else if( Array.isArray( changes ) ) {
 			changes.forEach(( _, c ) => doMergeAt( c, slice, changes ));
-		} else {
-			slice = changes;
 		}
 	};
+	/**
+	 * @param {T} slice
+	 * @param {T} changes
+	 * @template {PartialState<State>} T
+	 */
+	const mergeChanges = ( slice, changes ) => { !isEqual( slice, changes ) && runMerger( slice, changes ) };
+
 	return mergeChanges;
 })();
 
@@ -143,20 +143,13 @@ class Accessor {
 			}
 		} else {
 			/** @type {PartialState<State>} */
-			let update = {};
+			const update = {};
 			for( const p of this.#paths ) {
 				if( !( p in atoms ) ) { continue }
 				const atom = atoms[ p ];
 				!atom.isConnected( this.#id ) &&
 				atom.connect( this.#id );
-				if( isEqual( get( value, p ), atom.value ) ) { continue }
-				if( Object.keys( update ).some( k => getPathTesterIn( k ).contains( p ) ) ) {
-					set( update, p, atom.value );
-					continue;
-				}
-				const slice = clonedeep( pick( this.#source, p ) ); // need to maintain exact state property nomenclature
-				set( slice, p, atom.value );
-				update = { ...update, ...slice };
+				set( update, p, atom.value );
 			}
 			mergeChanges( value, update );
 		}

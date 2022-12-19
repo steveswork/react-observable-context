@@ -117,9 +117,11 @@ describe( 'Accessor class', () => {
 		} );
 	} );
 	describe( 'refreshValue(...)', () => {
-		let accessor, initVal, retVal, retValExpected;
+		let accessor, accessedPropertyPaths, createAccessorAtoms;
+		let source, initVal, retVal, retValExpected;
 		beforeAll(() => {
-			const accessedPropertyPaths = Object.freeze([
+			source = createSourceData();
+			accessedPropertyPaths = Object.freeze([
 				'address',
 				'friends[1].id',
 				'friends[1].name.last',
@@ -127,13 +129,14 @@ describe( 'Accessor class', () => {
 				'registered.time',
 				'tags[4]'
 			]);
+			createAccessorAtoms = ( state = source, paths = accessedPropertyPaths ) => paths.reduce(( a, p ) => {
+				a[ p ] = new Atom();
+				a[ p ].setValue( get( state, p ) );
+				return a;
+			}, {});
 			accessor = new Accessor( source, accessedPropertyPaths );
 			initVal = accessor.value;
-			retVal = accessor.refreshValue( accessor.paths.reduce(( a, p ) => {
-				a[ p ] = new Atom();
-				a[ p ].setValue( get( source, p ) );
-				return a;
-			}, {}) );
+			retVal = accessor.refreshValue( createAccessorAtoms( source ) );
 			retValExpected = {
 				address: '760 Midwood Street, Harborton, Massachusetts, 7547',
 				friends: [ undefined, {
@@ -157,8 +160,31 @@ describe( 'Accessor class', () => {
 			expect( initVal ).toEqual({});
 			expect( accessor.value ).toEqual( retValExpected );
 		} );
-		test( 'returns the newly constructed value', () => expect( retVal ).toEqual( retValExpected ) );
+		test( 'returns the latest constructed value', () => expect( retVal ).toEqual( retValExpected ) );
 		test( 'ensures readonly value', () => expect( isReadonly( accessor.value ) ).toBe( true ) );
+		test( 'changes only parts of its return value with new updates', () => {
+			const source = createSourceData();
+			const accessor = new Accessor( source, accessedPropertyPaths );
+			const atoms = createAccessorAtoms( source );
+			const existingVal = accessor.refreshValue( atoms );
+			const updatePath = 'history.places[2].year';
+			update: {
+				atoms[ updatePath ].setValue( '2030' );
+				accessor.refreshDue = true;
+			}
+			const updatedVal = accessor.refreshValue( atoms );
+			expect( existingVal ).not.toBe( updatedVal );
+			expect( existingVal ).not.toEqual( updatedVal );
+			for( const k in existingVal ) {
+				if( k === 'history' ) {
+					expect( existingVal[ k ] ).not.toBe( updatedVal[ k ] );
+					expect( existingVal[ k ] ).not.toEqual( updatedVal[ k ] );
+					continue;
+				}
+				expect( existingVal[ k ] ).toBe( updatedVal[ k ] );
+				expect( existingVal[ k ] ).toStrictEqual( updatedVal[ k ] );
+			}
+		} );
 	} );
 });
 
