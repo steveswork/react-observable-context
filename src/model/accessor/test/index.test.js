@@ -162,28 +162,42 @@ describe( 'Accessor class', () => {
 		} );
 		test( 'returns the latest constructed value', () => expect( retVal ).toEqual( retValExpected ) );
 		test( 'ensures readonly value', () => expect( isReadonly( accessor.value ) ).toBe( true ) );
-		test( 'changes only parts of its return value with new updates', () => {
-			const source = createSourceData();
-			const accessor = new Accessor( source, accessedPropertyPaths );
-			const atoms = createAccessorAtoms( source );
-			const existingVal = accessor.refreshValue( atoms );
-			const updatePath = 'history.places[2].year';
-			update: {
-				atoms[ updatePath ].setValue( '2030' );
-				accessor.refreshDue = true;
-			}
-			const updatedVal = accessor.refreshValue( atoms );
-			expect( existingVal ).not.toBe( updatedVal );
-			expect( existingVal ).not.toEqual( updatedVal );
-			for( const k in existingVal ) {
-				if( k === 'history' ) {
-					expect( existingVal[ k ] ).not.toBe( updatedVal[ k ] );
-					expect( existingVal[ k ] ).not.toEqual( updatedVal[ k ] );
-					continue;
+		describe( 'incorporating new data updates', () => {
+			let existingVal, updatedVal;
+			beforeAll(() => {
+				const source = createSourceData();
+				const accessor = new Accessor( source, [
+					...accessedPropertyPaths, 'history.places[0].year'
+				] );
+				const atoms = createAccessorAtoms( source );
+				existingVal = accessor.refreshValue( atoms );
+				update: {
+					atoms[ 'history.places[2].year' ].setValue( '2030' );
+					accessor.refreshDue = true;
 				}
-				expect( existingVal[ k ] ).toBe( updatedVal[ k ] );
-				expect( existingVal[ k ] ).toStrictEqual( updatedVal[ k ] );
-			}
+				updatedVal = accessor.refreshValue( atoms );
+			});
+			test( 'returns a value with a new object reference', () => {
+				expect( existingVal ).not.toBe( updatedVal );
+				expect( existingVal ).not.toEqual( updatedVal );
+			});
+			test( 'changes only properties of its return value affected by the new updates', () => {
+				for( const k in existingVal ) {
+					if( k === 'history' ) {
+						expect( existingVal[ k ] ).not.toBe( updatedVal[ k ] ); // contains `history.places[2].year="2030"` update
+						expect( existingVal[ k ] ).not.toEqual( updatedVal[ k ] ); // contains `history.places[2].year="2030"` update
+						continue;
+					}
+					expect( existingVal[ k ] ).toBe( updatedVal[ k ] ); // contains NO updates
+					expect( existingVal[ k ] ).toStrictEqual( updatedVal[ k ] ); // contains NO updates
+				}
+			} );
+			test( 'changes only nested parts of its return value with new updates', () => {
+				expect( existingVal.history.places[ 0 ] ).toBe( updatedVal.history.places[ 0 ] ); // contains NO updates
+				expect( existingVal.history.places[ 0 ] ).toStrictEqual( updatedVal.history.places[ 0 ] ); // contains NO updates
+				expect( existingVal.history.places[ 2 ] ).not.toBe( updatedVal.history.places[ 2 ] ); // contains `history.places[2].year="2030"` update
+				expect( existingVal.history.places[ 2 ] ).not.toStrictEqual( updatedVal.history.places[ 2 ] ); // contains `history.places[2].year="2030"` update
+			} );
 		} );
 	} );
 });
