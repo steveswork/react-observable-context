@@ -1,4 +1,13 @@
-﻿# React-Observable-Context
+﻿<hr/>
+<br /><br />
+This version is currently under test. Please continue to use our latest stable release at: 3.0.0.<br /><br />
+npm install --save @webkrafters/react-observable-context@3.0.0
+<br /><br />
+Thank you!
+<br /><br /><br />
+<hr />
+
+# React-Observable-Context
 
 A context bearing an observable consumer [store](#store).\
 Only re-renders subscribing components on context state change.\
