@@ -16,7 +16,9 @@ function promisify( fn ) {
 		} );
 	};
 };
+
 var readFile = promisify( fs.readFile.bind( fs ) );
+var unlink = promisify( fs.unlink.bind( fs ) );
 var writeFile = promisify( fs.writeFile.bind( fs ) );
 
 /** @param {string} code */
@@ -24,11 +26,13 @@ function trimComments( code ) {
 	return code
 		.replace( /\/\*#__PURE__\*\//gm, '' )
 		.replace( /\s*\/\/.*$/gm, '' )
-		.replace( /\s*\/\*\*?(?:[^*]|\*(?!\/))*(?:\*\/|$)/gm, '' )
-		.replace( /(?:^\s*\n)*/gm, '' );
+		.replace( /\s*\/\*(?:\*\s+(?:[^*]|\*(?!\/))*@typedef)?\s+(?:[^*]|\*(?!\/))*(?:\*\/|$)/gm, '' )
+		.replace( /(?:^\s*\n)*/gm, '' )
+		.replace( /(\/\*(?:[^*]|\*(?!\/))*\*\/)\n(exports\.[^=]+=[^;]+;)/gm, '$2\n$1' );
 }
 
 var EXT_PATTERN = /\.(j|t)s$/;
+var JSDOC_BASEFILE_PATTERN = /[\/\\]types\.js$/;
 
 ( function traverse( directory ) {
 	fs.readdirSync( directory, CHARSET ).forEach( function ( entry ) {
@@ -36,15 +40,15 @@ var EXT_PATTERN = /\.(j|t)s$/;
 		if( fs.statSync( fPath ).isDirectory() ) {
 			return traverse( fPath );
 		}
-		EXT_PATTERN.test( fPath ) && trimResults.push(
-			readFile( fPath, CHARSET )
-				.then( function ( f ) {
+		EXT_PATTERN.test( fPath ) && trimResults.push((
+			JSDOC_BASEFILE_PATTERN.test( fPath )
+				? unlink( fPath ).then( function () { return { fname: fPath, result: true } } )
+				: readFile( fPath, CHARSET ).then( function ( f ) {
 					return writeFile( fPath, trimComments( f ), CHARSET )
 						.then( function () { return { fname: fPath, result: true } } )
 						.catch( function ( e ) { return { fname: fPath, result: e } } )
 				} )
-				.catch( function ( e ) { return { fname: fPath, result: e } } )
-		);
+		).catch( function ( e ) { return { fname: fPath, result: e } } ));
 	} );
 } )( path.join( process.cwd(), 'dist' ) );
 

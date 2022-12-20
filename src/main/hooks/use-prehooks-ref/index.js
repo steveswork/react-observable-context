@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * @param {import("../../../types").Prehooks<T>} prehooks
+ * @param {Prehooks<T>} prehooks
  * @template {State} T
  */
 const usePrehooksRef = prehooks => {
@@ -11,3 +11,9 @@ const usePrehooksRef = prehooks => {
 };
 
 export default usePrehooksRef;
+
+/**
+ * @typedef {import("../../../types").Prehooks<T>} Prehooks
+ * @template {State} T
+ */
+/** @typedef {import("../../../types").State} State */
