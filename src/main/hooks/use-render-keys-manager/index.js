@@ -1,37 +1,30 @@
 import { useMemo, useRef } from 'react';
 
-import isEmpty from 'lodash.isempty';
-import isEqual from 'lodash.isequal';
-
-export const FULL_STATE_SELECTOR = '@@STATE';
-export const NULL_STATE_SELECTOR = '';
+import { NULL_STATE_SELECTOR } from '../../../constants';
 
 /**
- * @param {string[]} renderKeys
- * @returns {string[]}
+ * @param {{[selectorKey: string]: string|keyof T}} selectorMap Key:value pairs where `key` => arbitrary key given to Store.data property holding the state slices and `value` => property paths to state slices used by this component. May use `{..., state: '@@STATE'}` to indicate a desire to obtain the entire state object and assign to a `state` property of Store.data. A change in any of the referenced properties results in this component render. When using `['@@STATE']`, any change in the state object results in this component render.
+ * @returns {[string|keyof T]} Property paths
+ * @template {State} T
  */
-const useRenderKeysManager = renderKeys => {
-
-	const curKeys = useRef([]);
-
-	const managedKeys = useMemo(() => {
-		if( !isEqual( curKeys.current, renderKeys ) ) {
-			curKeys.current = renderKeys;
+const useRenderKeysManager = selectorMap => {
+	const renderKeys = useRef([]);
+	sync: {
+		const currKeys = Object.values( selectorMap );
+		if( renderKeys.current.length !== currKeys.length &&
+			renderKeys.current.some(( k, i ) => k !== currKeys[ i ])
+		) {
+			renderKeys.current = currKeys;
 		}
-		return curKeys.current;
-	}, [ renderKeys ]);
-
-	return useMemo(() => {
-		const selectors = Array.isArray( managedKeys )
-			? Array.from( new Set( managedKeys ) )
-			: []
-		if( isEmpty( selectors ) ) {
-			selectors[ 0 ] = NULL_STATE_SELECTOR; // empty string propertyPath causes the state-manager getState to return `undefined`
-		} else if( managedKeys.includes( FULL_STATE_SELECTOR ) ) {
-			selectors.length = 0; // no propertyPath argument causes state-manager getState to return complete state
-		}
-		return selectors;
-	}, [ managedKeys ]);
+	}
+	// empty string property path causes the state-manager getState to return `undefined`
+	return useMemo(() => (
+		renderKeys.current.length
+			? Array.from( new Set( renderKeys.current ) )
+			: [ NULL_STATE_SELECTOR ]
+	), [ renderKeys.current ]);
 };
 
 export default useRenderKeysManager;
+
+/** @typedef {import("../../../types").State} State */

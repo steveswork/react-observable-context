@@ -12,7 +12,7 @@ export default null;
 /** @typedef {{[K in "getState"|"resetState"|"setState"|"subscribe"]: NonReactUsageReport}} IStore */
 
 /**
- * @typedef {(state: PartialState<T>) => void} Listener
+ * @typedef {(changes: PartialState<T>) => void} Listener
  * @template {State} T
  */
 
@@ -44,7 +44,7 @@ export default null;
 
 /**
  * @typedef {{
- *		data: PartialState<T>,
+ *		data: State,
  *		resetState: VoidFunction,
  *		setState: (changes: PartialState<T>) => void,
  * }} Store

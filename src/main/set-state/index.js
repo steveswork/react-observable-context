@@ -114,7 +114,7 @@ function set( state, newState, stats ) {
 function setState( state, newState, onStateChange ) {
 	const stats = { hasChanges: false };
 	set( state, newState, stats );
-	stats.hasChanges && onStateChange?.( state );
+	stats.hasChanges && onStateChange?.( newState );
 };
 
 export default setState;

@@ -8,7 +8,7 @@ import React, {
 import { createContext, useContext } from '..';
 
 export const ObservableContext = createContext();
-export const useObservableContext = watchedKeys => useContext( ObservableContext, watchedKeys );
+export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
 
 /** @type {React.FC<void>} */
 const Reset = () => {
@@ -20,23 +20,60 @@ const Reset = () => {
 };
 Reset.displayName = 'Reset';
 
-const TALLY_DISPLAY_CONTEXT_KEYS = [ 'color', 'price', 'type' ];
+/** @type {React.FC<{text: string}>} */
+export const CapitalizedDisplay = ({ text }) => {
+
+	useEffect(() => console.log( `CapitalizedDisplay( ${ text } ) component rendered.....` ));
+
+	return text && `${ text[ 0 ].toUpperCase() }${ text.length > 1 ? text.slice( 1 ) : '' }`
+};
+CapitalizedDisplay.displayName = 'CapitalizedDisplay';
+
+/** @type {React.FC<void>} */
+export const CustomerPhoneDisplay = () => {
+	const { data: { customer: { phone } } } = useObservableContext([ 'customer.phone' ]);
+
+	useEffect(() => console.log( 'CustomerPhoneDisplay component rendered.....' ));
+
+	return `Phone: ${ phone ?? 'n.a.' }`;
+};
+CustomerPhoneDisplay.displayName = 'CustomerPhoneDisplay';
 
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { data } = useObservableContext( TALLY_DISPLAY_CONTEXT_KEYS );
+	const { data: { color, customer: { name }, type, price } } =
+		useObservableContext([ 'color', 'customer.name', 'price', 'type' ]);
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
-	const { color, type, price } = data;
-
 	return (
-		<div>
+		<div style={{ margin: '20px 0 10px' }}>
+			<div style={{ float: 'left', fontSize: '1.75rem' }}>
+				Customer:
+				{ ' ' }
+				{ !name.first.length && !name.last.length
+					? 'n.a.'
+					: (
+						<>
+							<CapitalizedDisplay text={ name.first } />
+							{ ' ' }
+							<CapitalizedDisplay text={ name.last } />
+						</>
+					)
+				}
+			</div>
+			<div style={{ clear: 'both', paddingLeft: 3 }}>
+				<CustomerPhoneDisplay />
+			</div>
 			<table>
 				<tbody>
-					<tr><td><label>Type:</label></td><td>{ type }</td></tr>
-					<tr><td><label>Color:</label></td><td>{ color }</td></tr>
+					<tr><td><label>Type:</label></td><td>
+						<CapitalizedDisplay text={ type } />
+					</td></tr>
+					<tr><td><label>Color:</label></td><td>
+						<CapitalizedDisplay text={ color } />
+					</td></tr>
 					<tr><td><label>Price:</label></td><td>{ price.toFixed( 2 ) }</td></tr>
 				</tbody>
 			</table>
@@ -53,15 +90,33 @@ export const Editor = () => {
 
 	const { setState } = useObservableContext();
 
+	const fNameInputRef = useRef();
+	const lNameInputRef = useRef();
+	const phoneInputRef = useRef();
 	const priceInputRef = useRef();
 	const colorInputRef = useRef();
 	const typeInputRef = useRef();
 
-	const updatePrice = useCallback(() => {
-		setState({ price: Number( priceInputRef.current.value ) });
-	}, []);
 	const updateColor = useCallback(() => {
 		setState({ color: colorInputRef.current.value });
+	}, []);
+	const updateName = useCallback(() => {
+		setState({
+			customer: {
+				name: {
+					first: fNameInputRef.current.value,
+					last: lNameInputRef.current.value
+				}
+			}
+		});
+	}, []);
+	const updatePhone = useCallback(() => {
+		const phone = phoneInputRef.current.value;
+		if( phone.length && !/[0-9]{10}/.test( phone ) ) { return }
+		setState({ customer: { phone } });
+	}, []);
+	const updatePrice = useCallback(() => {
+		setState({ price: Number( priceInputRef.current.value ) });
 	}, []);
 	const updateType = useCallback(() => {
 		setState({ type: typeInputRef.current.value });
@@ -72,6 +127,25 @@ export const Editor = () => {
 	return (
 		<fieldset style={{ margin: '10px 0' }}>
 			<legend>Editor</legend>
+			<h3 style={{ margin: '0.5rem 0' }}>Customer:</h3>
+			<div style={{ float: 'left', margin: '10px 0' }}>
+				<label htmlFor='firstName'><input ref={ fNameInputRef } placeholder="First name" /></label>
+				{ ' ' }
+				<label htmlFor='lastName'><input ref={ lNameInputRef } placeholder="Last name" /></label>
+				{ ' ' }
+				<button onClick={ updateName }>update price</button>
+			</div>
+			<div style={{ clear: 'both', margin: '10px 0' }}>
+				<label>New Phone: <input
+					maxLength={ 10 }
+					placeholder="Empty or 10-digit integer"
+					ref={ phoneInputRef }
+					type="number"
+				/></label>
+				{ ' ' }
+				<button onClick={ updatePhone }>update phone</button>
+			</div>
+			<hr style={{ margin: '1.5rem 0' }} />
 			<div style={{ margin: '10px 0' }}>
 				<label>New Price: <input ref={ priceInputRef } /></label>
 				{ ' ' }
@@ -92,17 +166,12 @@ export const Editor = () => {
 };
 Editor.displayName = 'Editor';
 
-const PRODUCT_DESC_CONTEXT_KEYS = [ 'color', 'type' ];
-
 /** @type {React.FC<void>} */
 export const ProductDescription = () => {
 
-	const store = useObservableContext( PRODUCT_DESC_CONTEXT_KEYS );
+	const { data: { color, type } } = useObservableContext([ 'color', 'type' ]);
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
-
-	const { color, type } = store.data;
-
 	return (
 		<div style={{ fontSize: 24 }}>
 			<strong>Description:</strong> { color } { type }
@@ -111,16 +180,12 @@ export const ProductDescription = () => {
 };
 ProductDescription.displayName = 'ProductDescription';
 
-const PRICE_STICKER_CONTEXT_KEYS = [ 'price' ];
-
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const { data } = useObservableContext( PRICE_STICKER_CONTEXT_KEYS );
+	const { data: { price } } = useObservableContext([ 'price' ]);
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
-
-	const { price } = data;
 
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
@@ -138,7 +203,15 @@ PriceSticker.displayName = 'PriceSticker';
  */
 export const Product = ({ prehooks = undefined, type }) => {
 
-	const [ state, setState ] = useState(() => ({ type, price: 22.5, color: 'Burgundy' }));
+	const [ state, setState ] = useState(() => ({
+		color: 'Burgundy',
+		customer: {
+			name: { first: null, last: null },
+			phone: null
+		},
+		price: 22.5,
+		type
+	}));
 
 	useEffect(() => {
 		setState({ type }); // use this to update only the changed state

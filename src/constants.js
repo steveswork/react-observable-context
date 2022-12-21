@@ -1,2 +1,5 @@
-/** @type {null} */
-export const DEFAULT_STATE_PATH = null;
+/** @type {"@@STATE"} */
+export const FULL_STATE_SELECTOR = '@@STATE';
+
+/** @type {""} */
+export const NULL_STATE_SELECTOR = '';

@@ -10,6 +10,7 @@ import React, {
 	useState
 } from 'react';
 
+import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 import omit from 'lodash.omit';
 
@@ -104,40 +105,73 @@ export const createContext = () => {
  * Actively monitors the store and triggers component re-render if any of the watched keys in the state objects changes
  *
  * @param {ObservableContext<T>} context Refers to the PublicObservableContext<T> type of the ObservableContext<T>
- * @param {Array<string|keyof T>} [renderKeys = []] a list of paths to state object properties used by this component: see examples below. May use `['@@STATE']` to indicate a desire to obtain the entire state object. A change in any of the referenced properties results in this component render. When using `['@@STATE']`, any change in the state object results in this component render.
+ * @param {{[selectorKey: string]: string|keyof T}} [selectorMap = {}] Key:value pairs where `key` => arbitrary key given to Store.data property holding the state slices and `value` => property paths to state slices used by this component: see examples below. May use `{..., state: '@@STATE'}` to indicate a desire to obtain the entire state object and assign to a `state` property of Store.data. A change in any of the referenced properties results in this component render. When using `['@@STATE']`, any change in the state object results in this component render.
  * @returns {Store<T>}
  * @template {State} T
  * @see {ObservableContext<T>}
  * @example
- * a valid renderKey follows the `lodash` object property path convention.
+ * a valid propertyPath follows the `lodash` object property path convention.
  * for a state = { a: 1, b: 2, c: 3, d: { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] } }
- * Any of the following is a valid renderKey
- * 'a' => 1 // same applies to 'b' = 2; 'c' = 3
- * 'd' => { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] }
- * 'd.e' => 5
- * 'd.e.f => [6, { x: 7, y: 8, z: 9 } ]
- * 'd.e.f[0]' or 'd.e.f.0' => 6
- * 'd.e.f[1]' or 'd.e.f.1' => { x: 7, y: 8, z: 9 }
- * 'd.e.f[1].x' or 'd.e.f.1.x' => 7 // same applies to 'd.e.f[1].y' = 8; 'd.e.f[1].z' = 9
- * '@@STATE' => state
+ * Any of the following is an applicable selector map.
+ * {count: 'a', myData: 'd'} => {count: 1, myData: { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] }}
+ * {count: 'a'} => {count: 1} // same applies to {count: 'b'} = {count: 2}; {count: 'c'} = {count: 3}
+ * {myData: 'd'} => {mydata: { e: 5, f: [6, { x: 7, y: 8, z: 9 } ] }}
+ * {xyz: 'd.e'} => {xyz: 5}
+ * {def: 'd.e.f'} => {def: [6, { x: 7, y: 8, z: 9 } ]}
+ * {f1: 'd.e.f[0]'} or {f1: 'd.e.f.0'} => {f1: 6}
+ * {secondFElement: 'd.e.f[1]'} or {secondFElement: 'd.e.f.1'} => {secondFElement: { x: 7, y: 8, z: 9 }}
+ * {myX: 'd.e.f[1].x'} or {myX: 'd.e.f.1.x'} => {myX: 7} // same applies to {myY: 'd.e.f[1].y'} = {myY: 8}; {myZ: 'd.e.f[1].z'} = {myZ: 9}
+ * {myData: '@@STATE'} => {myData: state}
  */
-export const useContext = ( context, renderKeys = [] ) => {
+export const useContext = ( context, selectorMap = {} ) => {
 
 	/** @type {StoreInternal<T>} */
 	const { getState: _getState, subscribe, unlinkCache, ...store } = _useContext( context );
 
 	const [ clientId ] = useState( uuid );
 
-	const _renderKeys = useRenderKeysManager( renderKeys );
+	const _renderKeys = useRenderKeysManager( selectorMap );
 
-	/** @returns {Readonly<PartialState<T>>} */
-	const getState = () => _getState( clientId, ..._renderKeys );
+	/** @type {{[propertyPath: string]: string}} Reversed selectorMap i.e. {selectorKey: propertyPath} => {propertyPath: selectorKey} */
+	const path2SelectorMap = useMemo(() => {
+		const map = {};
+		for( const selectorKey in selectorMap ) {
+			map[ selectorMap[ selectorKey ] ] = selectorKey;
+		}
+		return map;
+	}, [ _renderKeys ]);
+
+	/**
+	 * @param {Data} [currData={}]
+	 * @returns {Data}
+	 */
+	const getState = ( currData = {} ) => {
+		let hasChanges = false;
+		const state = _getState( clientId, ..._renderKeys );
+		if( state === currData ) { return }
+		if( isEmpty( state ) && !isEmpty( currData ) ) {
+			return setData({});
+		}
+		for( const selectorKey in currData ) {
+			if( !( selectorMap[ selectorKey ] in state ) ) {
+				delete currData[ selectorKey ];
+				hasChanges = true;
+			}
+		}
+		for( const path in state ) {
+			if( currData[ path2SelectorMap[ path ] ] !== state[ path ] ) {
+				currData[ path2SelectorMap[ path ] ] = state[ path ];
+				hasChanges = true;
+			}
+		}
+		hasChanges && setData({ ...currData });
+	};
 
 	const [ data, setData ] = useState( getState );
 
-	useMemo(() => setData( getState() ), [ _renderKeys ]); // re-initialize data states
+	useMemo(() => setData( getState( data ) ), [ _renderKeys ]); // re-initialize data states
 
-	useEffect(() => subscribe(() => setData( getState() )), [ _renderKeys ]);
+	useEffect(() => subscribe(() => setData( getState( data ) )), [ _renderKeys ]);
 
 	useEffect(() => () => unlinkCache( clientId ), []);
 
@@ -205,6 +239,8 @@ export const useContext = ( context, renderKeys = [] ) => {
  */
 
 /** @typedef {import("../types").NonReactUsageReport} NonReactUsageReport */
+
+/** @typedef {{[selectorKey: string]: Readonly<*>}} Data */
 
 /** @typedef {import("react").ReactNode} ReactNode */
 

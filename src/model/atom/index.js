@@ -3,15 +3,16 @@ import clonedeep from 'lodash.clonedeep';
 import { makeReadonly } from '../../utils';
 
 /** An atom represents an entry for each individual property path of the state still in use by client components */
+/** @template T */
 class Atom {
 	/** @type {Set<number>} */
 	#connections;
-	/** @type {Readonly<Value>} */
+	/** @type {Readonly<T>} */
 	#value;
 
-	constructor() {
+	constructor( value = null ) {
 		this.#connections = new Set();
-		this.#value = makeReadonly({});
+		this.setValue( value );
 	}
 
 	get value() { return this.#value }
@@ -37,10 +38,8 @@ class Atom {
 	/** @param {number} accessorId */
 	isConnected( accessorId ) { return this.#connections.has( accessorId ) }
 
-	/** @param {Value|Readonly<Value>} newValue */
+	/** @param {T|Readonly<T>} newValue */
 	setValue( newValue ) { this.#value = makeReadonly( clonedeep( newValue ) ) }
 }
 
 export default Atom;
-
-/** @typedef {{[x:string]: *}} Value */

@@ -1,8 +1,9 @@
 import get from 'lodash.get';
+import has from 'lodash.has';
 import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
 
-import { DEFAULT_STATE_PATH } from '../../constants';
+import { FULL_STATE_SELECTOR } from '../../constants';
 
 import Atom from '../atom';
 import Accessor from '../accessor';
@@ -11,7 +12,7 @@ import Accessor from '../accessor';
 class AccessorCache {
 	/** @type {{[propertyPaths: string]: Accessor<T>}} */
 	#accessors;
-	/** @type {{[propertyPath: string]: Atom}} */
+	/** @type {{[propertyPath: string]: Atom<*>}} */
 	#atoms;
 	/** @type {T} */
 	#origin;
@@ -35,11 +36,21 @@ class AccessorCache {
 		const accessor = new Accessor( this.#origin, propertyPaths );
 		this.#accessors[ cacheKey ] = accessor;
 		for( const path of accessor.paths ) {
-			if( path in atoms ) { continue }
-			atoms[ path ] = new Atom();
-			atoms[ path ].setValue( get( this.#origin, path ) );
+			if( !( path in atoms ) ) {
+				atoms[ path ] = new Atom( this.#getOriginAt( path ) );
+			}
 		}
 		return this.#accessors[ cacheKey ];
+	}
+
+	/**
+	 * @param {string} propertyPath
+	 * @returns {*}
+	 */
+	#getOriginAt( propertyPath ) {
+		return propertyPath !== FULL_STATE_SELECTOR
+			? get( this.#origin, propertyPath )
+			: this.#origin
 	}
 
 	/**
@@ -48,10 +59,10 @@ class AccessorCache {
 	 *
 	 * @param {string} clientId
 	 * @param {...string} propertyPaths
-	 * @return {Readonly<PartialState<T>>}
+	 * @return {{[propertyPaths: string]: Readonly<*>}}
 	 */
 	get( clientId, ...propertyPaths ) {
-		if( isEmpty( propertyPaths ) ) { propertyPaths = [ DEFAULT_STATE_PATH ] }
+		if( isEmpty( propertyPaths ) ) { propertyPaths = [ FULL_STATE_SELECTOR ] }
 		const cacheKey = JSON.stringify( propertyPaths );
 		const accessor = cacheKey in this.#accessors
 			? this.#accessors[ cacheKey ]
@@ -80,40 +91,36 @@ class AccessorCache {
 		}
 	}
 
-	/** Observes the origin state bearing ObservableContext store for state changes to update accessors. */
-	watchSource() {
+	/**
+	 * Observes the origin state bearing ObservableContext store for state changes to update accessors.
+	 *
+	 * @type {Listener<T>}
+	 */
+	watchSource( originChanges ) {
 		const accessors = this.#accessors;
 		const atoms = this.#atoms;
-		const state = this.#origin;
 		const updatedPaths = {};
 		for( const path in atoms ) {
-			const newAtomVal = get( state, path );
+			if( path !== FULL_STATE_SELECTOR && !has( originChanges, path ) ) { continue }
+			const newAtomVal = this.#getOriginAt( path )
 			if( isEqual( newAtomVal, atoms[ path ].value ) ) { continue }
 			atoms[ path ].setValue( newAtomVal );
 			updatedPaths[ path ] = true;
 		}
-		if( isEmpty( updatedPaths ) ) { // account for DEFAULT_STATE_PATH (which does not use atoms)
-			for( const k in accessors ) {
-				if( accessors[ k ].paths[ 0 ] === DEFAULT_STATE_PATH ) {
-					accessors[ k ].refreshDue = true;
-				}
-			}
-			return;
-		}
+		if( isEmpty( updatedPaths ) ) { return }
 		for( const k in accessors ) {
-			if( accessors[ k ].refreshDue ) { continue }
-			const accessorPaths = accessors[ k ].paths;
-			accessors[ k ].refreshDue =
-				accessorPaths[ 0 ] === DEFAULT_STATE_PATH ||
-				accessorPaths.some( p => p in updatedPaths );
+			if( !accessors[ k ].refreshDue ) {
+				accessors[ k ].refreshDue = accessors[ k ].paths.some( p => p in updatedPaths );
+			}
 		}
 	}
 }
 
 export default AccessorCache;
 
-/** @typedef {import("../../types").State} State */
 /**
- * @typedef {import("../../types").PartialState<T>} PartialState
+ * @typedef {import("../../types").Listener<T>} Listener
  * @template {State} T
  */
+
+/** @typedef {import("../../types").State} State */

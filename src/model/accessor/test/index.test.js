@@ -11,14 +11,14 @@ describe( 'Accessor class', () => {
 	const source = createSourceData();
 	const accessedPropertyPaths = Object.freeze([
 		'address',
-		'friends[1].id', // -
+		'friends[1].id',
 		'friends[1]',
-		'friends[1].name.last', // -
-		'history.places', // -
-		'history.places[2].year', // -
+		'friends[1].name.last',
+		'history.places',
+		'history.places[2].year',
 		'history',
 		'registered.time',
-		'registered.time.hours', // -
+		'registered.time.hours',
 		'tags[4]'
 	]);
 	const accessor = new Accessor( source, accessedPropertyPaths );
@@ -46,22 +46,15 @@ describe( 'Accessor class', () => {
 		test( 'is a distinct value from the `accessedPropertyPaths`', () => {
 			expect( accessor.paths ).not.toBe( accessedPropertyPaths );
 		});
-		test( 'only contains most inclusive propertyPaths options supplied', () => {
-			const lessInclusivePaths = [ 1, 3, 4, 5, 8 ].map( i => accessedPropertyPaths[ i ]);
-			expect( accessor.paths ).toHaveLength( accessedPropertyPaths.length - lessInclusivePaths.length );
-			expect( lessInclusivePaths.every( p => !accessor.paths.includes( p ) ) ).toBe( true );
-		} );
-		test( '`null` is the most inclusive of propertyPaths options', () => {
-			const accessor = new Accessor( source, [ ...accessedPropertyPaths, null ] );
-			expect( accessor.paths ).toStrictEqual([ null ]);
+		test( 'preserves all propertyPaths options supplied', () => {
+			expect( accessor.paths ).not.toBe( accessedPropertyPaths );
+			expect( accessor.paths ).toStrictEqual( accessedPropertyPaths );
 		} );
 	} );
 	describe( 'value property', () => {
 		test( 'is empty object by default', () => expect( accessor.value ).toEqual({}) );
-		test( 'is readonly', () => {
-			expect(() => { accessor.value.testFlag = true }).toThrow(
-				'Cannot add property testFlag, object is not extensible'
-			);
+		test( 'contains only readonly value properties', () => {
+			expect( Object.values( accessor.value ).every( isReadonly ) ).toBe( true )
 		} );
 		test( 'is privately mutable only', () => {
 			expect(() => { accessor.value = expect.anything() }).toThrow( SET_ERROR`value` );
@@ -121,85 +114,37 @@ describe( 'Accessor class', () => {
 		let source, initVal, retVal, retValExpected;
 		beforeAll(() => {
 			source = createSourceData();
-			accessedPropertyPaths = Object.freeze([
-				'address',
-				'friends[1].id',
-				'friends[1].name.last',
-				'history.places[2].year',
-				'registered.time',
-				'tags[4]'
-			]);
+			retValExpected = {
+				address: '760 Midwood Street, Harborton, Massachusetts, 7547',
+				'friends[1].id': 1,
+				'friends[1].name.last': 'Roberson',
+				'history.places[2].year': '2017',
+				'registered.time': {
+					hours: 9,
+					minutes: 55,
+					seconds: 46
+				},
+				'tags[4]': 'ullamco'
+			};
+			accessedPropertyPaths = Object.keys( retValExpected );
 			createAccessorAtoms = ( state = source, paths = accessedPropertyPaths ) => paths.reduce(( a, p ) => {
-				a[ p ] = new Atom();
-				a[ p ].setValue( get( state, p ) );
+				a[ p ] = new Atom( get( state, p ) );
 				return a;
 			}, {});
 			accessor = new Accessor( source, accessedPropertyPaths );
 			initVal = accessor.value;
 			retVal = accessor.refreshValue( createAccessorAtoms( source ) );
-			retValExpected = {
-				address: '760 Midwood Street, Harborton, Massachusetts, 7547',
-				friends: [ undefined, {
-					id: 1,
-					name: { last: 'Roberson' }
-				} ],
-				history: {
-					places: [ undefined, undefined, { year: '2017' } ]
-				},
-				registered: {
-					time: {
-						hours: 9,
-						minutes: 55,
-						seconds: 46
-					}
-				},
-				tags: [ undefined, undefined, undefined, undefined, 'ullamco' ]
-			};
 		});
-		test( "constructs atoms' current values into an accessor value", () => {
-			expect( initVal ).toEqual({});
+		test( "immediately constructs atoms' current values into an accessor value", () => {
+			expect( initVal ).toEqual( retValExpected );
 			expect( accessor.value ).toEqual( retValExpected );
+			expect( retVal ).toBe( initVal );
 		} );
 		test( 'returns the latest constructed value', () => expect( retVal ).toEqual( retValExpected ) );
-		test( 'ensures readonly value', () => expect( isReadonly( accessor.value ) ).toBe( true ) );
-		describe( 'incorporating new data updates', () => {
-			let existingVal, updatedVal;
-			beforeAll(() => {
-				const source = createSourceData();
-				const accessor = new Accessor( source, [
-					...accessedPropertyPaths, 'history.places[0].year'
-				] );
-				const atoms = createAccessorAtoms( source );
-				existingVal = accessor.refreshValue( atoms );
-				update: {
-					atoms[ 'history.places[2].year' ].setValue( '2030' );
-					accessor.refreshDue = true;
-				}
-				updatedVal = accessor.refreshValue( atoms );
-			});
-			test( 'returns a value with a new object reference', () => {
-				expect( existingVal ).not.toBe( updatedVal );
-				expect( existingVal ).not.toEqual( updatedVal );
-			});
-			test( 'changes only properties of its return value affected by the new updates', () => {
-				for( const k in existingVal ) {
-					if( k === 'history' ) {
-						expect( existingVal[ k ] ).not.toBe( updatedVal[ k ] ); // contains `history.places[2].year="2030"` update
-						expect( existingVal[ k ] ).not.toEqual( updatedVal[ k ] ); // contains `history.places[2].year="2030"` update
-						continue;
-					}
-					expect( existingVal[ k ] ).toBe( updatedVal[ k ] ); // contains NO updates
-					expect( existingVal[ k ] ).toStrictEqual( updatedVal[ k ] ); // contains NO updates
-				}
-			} );
-			test( 'changes only nested parts of its return value with new updates', () => {
-				expect( existingVal.history.places[ 0 ] ).toBe( updatedVal.history.places[ 0 ] ); // contains NO updates
-				expect( existingVal.history.places[ 0 ] ).toStrictEqual( updatedVal.history.places[ 0 ] ); // contains NO updates
-				expect( existingVal.history.places[ 2 ] ).not.toBe( updatedVal.history.places[ 2 ] ); // contains `history.places[2].year="2030"` update
-				expect( existingVal.history.places[ 2 ] ).not.toStrictEqual( updatedVal.history.places[ 2 ] ); // contains `history.places[2].year="2030"` update
-			} );
+		test( 'ensures readonly property values', () => {
+			expect( Object.values( accessor.value ).every( isReadonly ) ).toBe( true );
 		} );
 	} );
-});
+} );
 
 /** @typedef {{[x:string]: Atom}} Atoms */

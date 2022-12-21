@@ -9,6 +9,7 @@
   "dependencies": {
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
+    "lodash.has": "^4.5.2",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isplainobject": "^4.0.6",
@@ -93,6 +94,7 @@
   "main": "index.js",
   "name": "@webkrafters/react-observable-context",
   "peerDependencies": {
+    "@types/react": ">= 16.8.0",
     "react": ">= 16.8.0"
   },
   "publishConfig": {
@@ -108,5 +110,5 @@
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/main/index.d.ts",
-  "version": "4.0.0-alpha.1"
+  "version": "4.0.0-alpha.2"
 }

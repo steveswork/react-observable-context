@@ -52,7 +52,7 @@ const useStore = ( prehooks, value, storage ) => {
 	});
 
 	/** @type {Listener<T>} */
-	const onChange = state => listeners.forEach( listener => listener( state ) );
+	const onChange = changes => listeners.forEach( listener => listener( changes ) );
 
 	/** @type {StoreInternal<T>["resetState"]} */
 	const resetState = useCallback(() => {

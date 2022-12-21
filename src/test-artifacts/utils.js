@@ -13,6 +13,8 @@ export const isReadonly = v => {
 					verify( value[ i ] );
 				}
 			}
+		} else if( !Object.isFrozen( value ) ) {
+			isReadonly = false;
 		}
 	}
 	verify( v );
