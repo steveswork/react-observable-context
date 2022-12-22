@@ -111,7 +111,7 @@ describe( 'useStore', () => {
 			describe( 'getState', () => {
 				test( 'returns state slice at property path', () => {
 					const PROPERTY_PATH = 'a';
-					expect( store.getState( PROPERTY_PATH ) ).toEqual( initialState );
+					expect( store.getState( 'TEST_CLIENT', PROPERTY_PATH ) ).toEqual( initialState );
 				} );
 			} );
 			describe( 'resetState', () => {

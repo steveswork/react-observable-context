@@ -7,18 +7,19 @@ import setState from '.';
 describe( 'setState(...)', () => {
 	const state = createSourceData();
 	describe( 'basics', () => {
-		let newAge, onChangeMock, prevAge;
+		let newAge, changes, onChangeMock, prevAge;
 		beforeAll(() => {
 			newAge = 56;
+			changes = { age: newAge };
 			onChangeMock = jest.fn();
 			prevAge = state.age;
-			setState( state, { age: newAge }, onChangeMock );
+			setState( state, changes, onChangeMock );
 		});
 		afterAll(() => { state.age = prevAge })
 		test( 'updates state with new changes', () => expect( state.age ).toBe( newAge ) );
 		test( 'notifies listeners of state changes', () => {
 			expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-			expect( onChangeMock ).toHaveBeenCalledWith( state );
+			expect( onChangeMock ).toHaveBeenCalledWith( changes );
 		} );
 	} );
 	describe( 'attempt resulting in state change', () => {
@@ -59,8 +60,8 @@ describe( 'setState(...)', () => {
 		test( 'sends state change notifications', () => {
 			expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
 		} );
-		test( 'communicates current state in state change notification', () => {
-			expect( onChangeMock ).toHaveBeenCalledWith( state );
+		test( 'communicates proposed changes as part of state change notification', () => {
+			expect( onChangeMock ).toHaveBeenCalledWith( newState );
 		} );
 	} );
 	describe( 'attempt resulting in no state change', () => {
@@ -116,7 +117,7 @@ describe( 'setState(...)', () => {
 			} );
 			test( 'notifies listeners of state changes', () => {
 				expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-				expect( onChangeMock ).toHaveBeenCalledWith( state );
+				expect( onChangeMock ).toHaveBeenCalledWith( newState );
 			} );
 		} );
 		describe( 'using indexed object to create new array entry', () => {
@@ -154,7 +155,7 @@ describe( 'setState(...)', () => {
 			} );
 			test( 'notifies listeners of state changes', () => {
 				expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-				expect( onChangeMock ).toHaveBeenCalledWith( state );
+				expect( onChangeMock ).toHaveBeenCalledWith( newState );
 			} );
 		} );
 		describe( 'using indexed object resulting in no new state change', () => {
@@ -207,7 +208,7 @@ describe( 'setState(...)', () => {
 			} );
 			test( 'notifies listeners of state changes', () => {
 				expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-				expect( onChangeMock ).toHaveBeenCalledWith( state );
+				expect( onChangeMock ).toHaveBeenCalledWith( newState );
 			} );
 		} );
 		describe( 'incoming array is a subset of existing array', () => {
@@ -229,7 +230,7 @@ describe( 'setState(...)', () => {
 			} );
 			test( 'notifies listeners of the removed last entry', () => {
 				expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-				expect( onChangeMock ).toHaveBeenCalledWith( state );
+				expect( onChangeMock ).toHaveBeenCalledWith( newState );
 			} );
 		} );
 		describe( 'incoming array > existing array', () => {
@@ -259,7 +260,7 @@ describe( 'setState(...)', () => {
 					const replacedFriendsSlice = {};
 					newState.friends.forEach(( f, i ) => { replacedFriendsSlice[ i ] = f });
 					expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-					expect( onChangeMock ).toHaveBeenCalledWith( state );
+					expect( onChangeMock ).toHaveBeenCalledWith( newState );
 				} );
 			} );
 			describe( 'where incoming array contains existing array entries at the matching indexes', () => {
@@ -293,7 +294,7 @@ describe( 'setState(...)', () => {
 				} );
 				test( 'notifies listeners of updated array entries', () => {
 					expect( onChangeMock ).toHaveBeenCalledTimes( 1 );
-					expect( onChangeMock ).toHaveBeenCalledWith( state );
+					expect( onChangeMock ).toHaveBeenCalledWith( newState );
 				} );
 			} );
 		} );

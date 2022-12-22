@@ -16,7 +16,7 @@ import omit from 'lodash.omit';
 
 import { v4 as uuid } from 'uuid';
 
-import useRenderKeysManager from './hooks/use-render-keys-manager';
+import useRenderKeyProvider from './hooks/use-render-key-provider';
 
 import useStore from './hooks/use-store'
 
@@ -130,50 +130,58 @@ export const useContext = ( context, selectorMap = {} ) => {
 
 	const [ clientId ] = useState( uuid );
 
-	const _renderKeys = useRenderKeysManager( selectorMap );
+	const _renderKeys = useRenderKeyProvider( selectorMap );
 
 	/** @type {{[propertyPath: string]: string}} Reversed selectorMap i.e. {selectorKey: propertyPath} => {propertyPath: selectorKey} */
 	const path2SelectorMap = useMemo(() => {
 		const map = {};
+		if( isEmpty( _renderKeys ) ) { return map };
 		for( const selectorKey in selectorMap ) {
 			map[ selectorMap[ selectorKey ] ] = selectorKey;
 		}
 		return map;
 	}, [ _renderKeys ]);
 
-	/**
-	 * @param {Data} [currData={}]
-	 * @returns {Data}
-	 */
-	const getState = ( currData = {} ) => {
+	/** @type {[Data, Function]} */
+	const [ data, setData ] = useState(() => {
+		const data = {};
+		if( isEmpty( _renderKeys ) ) { return data }
+		const state = _getState( clientId, ..._renderKeys );
+		for( const path of _renderKeys ) {
+			data[ path2SelectorMap[ path ] ] = state[ path ];
+		}
+		return data;
+	});
+
+	const updateData = () => {
 		let hasChanges = false;
 		const state = _getState( clientId, ..._renderKeys );
-		if( state === currData ) { return }
-		if( isEmpty( state ) && !isEmpty( currData ) ) {
-			return setData({});
-		}
-		for( const selectorKey in currData ) {
-			if( !( selectorMap[ selectorKey ] in state ) ) {
-				delete currData[ selectorKey ];
+		for( const path of _renderKeys ) {
+			if( data[ path2SelectorMap[ path ] ] !== state[ path ] ) {
+				data[ path2SelectorMap[ path ] ] = state[ path ];
 				hasChanges = true;
 			}
 		}
-		for( const path in state ) {
-			if( currData[ path2SelectorMap[ path ] ] !== state[ path ] ) {
-				currData[ path2SelectorMap[ path ] ] = state[ path ];
-				hasChanges = true;
-			}
-		}
-		hasChanges && setData({ ...currData });
+		hasChanges && setData({ ...data });
 	};
 
-	const [ data, setData ] = useState( getState );
-
-	useMemo(() => setData( getState( data ) ), [ _renderKeys ]); // re-initialize data states
-
-	useEffect(() => subscribe(() => setData( getState( data ) )), [ _renderKeys ]);
-
-	useEffect(() => () => unlinkCache( clientId ), []);
+	useEffect(() => { // sync data states with new renderKeys
+		if( isEmpty( _renderKeys ) ) {
+			!isEqual( {}, data ) && setData( {} );
+			return;
+		}
+		for( const selectorKey in data ) {
+			if( !( selectorMap[ selectorKey ] in path2SelectorMap ) ) {
+				delete data[ selectorKey ];
+			}
+		}
+		const unsubscribe = subscribe( updateData );
+		updateData();
+		return () => {
+			unsubscribe();
+			unlinkCache( clientId );
+		};
+	}, [ _renderKeys ]);
 
 	return useMemo(() => ({ data, ...store }), [ data ]);
 };
@@ -240,7 +248,7 @@ export const useContext = ( context, selectorMap = {} ) => {
 
 /** @typedef {import("../types").NonReactUsageReport} NonReactUsageReport */
 
-/** @typedef {{[selectorKey: string]: Readonly<*>}} Data */
+/** @typedef {import("../types").Data} Data */
 
 /** @typedef {import("react").ReactNode} ReactNode */
 

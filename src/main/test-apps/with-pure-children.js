@@ -14,7 +14,15 @@ const TallyDisplayMemo = memo( TallyDisplay );
 
 /** @type {React.FC<{type:string}>} */
 const Product = ({ type }) => {
-	const [ state, setState ] = useState(() => ({ type, price: 22.5, color: 'Burgundy' }));
+	const [ state, setState ] = useState(() => ({
+		color: 'Burgundy',
+		customer: {
+			name: { first: null, last: null },
+			phone: null
+		},
+		price: 22.5,
+		type
+	}));
 	useEffect(() => {
 		setState({ type }); // use this to update only the changed state
 		// setState({ ...state, type }); // this will reset the context internal state

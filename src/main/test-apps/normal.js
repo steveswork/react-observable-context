@@ -5,9 +5,12 @@ import React, {
 	useState
 } from 'react';
 
+import isEmpty from 'lodash.isempty';
+
 import { createContext, useContext } from '..';
 
 export const ObservableContext = createContext();
+
 export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
 
 /** @type {React.FC<void>} */
@@ -31,19 +34,23 @@ CapitalizedDisplay.displayName = 'CapitalizedDisplay';
 
 /** @type {React.FC<void>} */
 export const CustomerPhoneDisplay = () => {
-	const { data: { customer: { phone } } } = useObservableContext([ 'customer.phone' ]);
+	const { data } = useObservableContext({ phone: 'customer.phone' });
 
 	useEffect(() => console.log( 'CustomerPhoneDisplay component rendered.....' ));
 
-	return `Phone: ${ phone ?? 'n.a.' }`;
+	return `Phone: ${ data.phone ?? 'n.a.' }`;
 };
 CustomerPhoneDisplay.displayName = 'CustomerPhoneDisplay';
 
 /** @type {React.FC<void>} */
 export const TallyDisplay = () => {
 
-	const { data: { color, customer: { name }, type, price } } =
-		useObservableContext([ 'color', 'customer.name', 'price', 'type' ]);
+	const { data: { color, name, price, type } } = useObservableContext({
+		color: 'color',
+		name: 'customer.name',
+		price: 'price',
+		type: 'type'
+	});
 
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 
@@ -52,7 +59,7 @@ export const TallyDisplay = () => {
 			<div style={{ float: 'left', fontSize: '1.75rem' }}>
 				Customer:
 				{ ' ' }
-				{ !name.first.length && !name.last.length
+				{ isEmpty( name.first ) && isEmpty( name.last )
 					? 'n.a.'
 					: (
 						<>
@@ -133,7 +140,7 @@ export const Editor = () => {
 				{ ' ' }
 				<label htmlFor='lastName'><input ref={ lNameInputRef } placeholder="Last name" /></label>
 				{ ' ' }
-				<button onClick={ updateName }>update price</button>
+				<button onClick={ updateName }>update customer</button>
 			</div>
 			<div style={{ clear: 'both', margin: '10px 0' }}>
 				<label>New Phone: <input
@@ -169,12 +176,12 @@ Editor.displayName = 'Editor';
 /** @type {React.FC<void>} */
 export const ProductDescription = () => {
 
-	const { data: { color, type } } = useObservableContext([ 'color', 'type' ]);
+	const { data } = useObservableContext({ c: 'color', t: 'type' });
 
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 	return (
 		<div style={{ fontSize: 24 }}>
-			<strong>Description:</strong> { color } { type }
+			<strong>Description:</strong> { data.c } { data.t }
 		</div>
 	);
 };
@@ -183,13 +190,13 @@ ProductDescription.displayName = 'ProductDescription';
 /** @type {React.FC<void>} */
 export const PriceSticker = () => {
 
-	const { data: { price } } = useObservableContext([ 'price' ]);
+	const { data: { p } } = useObservableContext({ p: 'price' });
 
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
-			${ price.toFixed( 2 ) }
+			${ p.toFixed( 2 ) }
 		</div>
 	);
 };

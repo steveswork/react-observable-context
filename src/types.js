@@ -1,5 +1,7 @@
 export default null;
 
+/** @typedef {{[selectorKey: string]: Readonly<*>}} Data */
+
 /**
  * @typedef {{
  * 		getItem: (key: string) => T,
@@ -35,7 +37,7 @@ export default null;
 
 /**
  * @typedef {{[K in "resetState"|"setState"]: Store<T>[K]} & {
- * 		getState: (clientId: string, ...propertyPaths?: string[]) => Readonly<PartialState<T>>,
+ * 		getState: (clientId: string, ...propertyPaths?: string[]) => {[propertyPaths: string]: Readonly<*>},
  *		subscribe: (listener: Listener<T>) => Unsubscribe
  * 		unlinkCache: (clientId: string) => void
  * }} StoreInternal
@@ -44,7 +46,7 @@ export default null;
 
 /**
  * @typedef {{
- *		data: State,
+ *		data: Data,
  *		resetState: VoidFunction,
  *		setState: (changes: PartialState<T>) => void,
  * }} Store

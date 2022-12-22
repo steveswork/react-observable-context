@@ -6,10 +6,8 @@ describe( 'Atom class', () => {
 	beforeAll(() => { atom = new Atom() })
 	test( 'creates an atom', () => expect( atom ).toBeInstanceOf( Atom ) );
 	describe( 'value property', () => {
-		test( 'is empty object by default', () => expect( atom.value ).toEqual({}) );
-		test( 'is readonly', () => expect(() => { atom.value.testFlag = true }).toThrow(
-			'Cannot add property testFlag, object is not extensible'
-		) );
+		test( 'is null by default', () => expect( atom.value ).toBeNull() );
+		test( 'is readonly', () => expect( Object.isFrozen( atom.value ) ).toBe( true ) );
 		test( 'converts all assignments to readonly', () => {
 			atom.setValue({ testFlag: true });
 			expect(() => { atom.value.testFlag = false }).toThrow(

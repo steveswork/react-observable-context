@@ -439,28 +439,27 @@ describe( 'ReactObservableContext', () => {
 					/** @type {Store<SourceData>} */
 					let store;
 					const Client = () => {
-						store = useContext( Context, [
-							'history.places[2].city',
-							'history.places[2].country',
-							'history.places[2].year',
-							'isActive',
-							'tags[5]',
-							'tags[6]'
-						]);
+						store = useContext( Context, {
+							city3: 'history.places[2].city',
+							country3: 'history.places[2].country',
+							year3: 'history.places[2].year',
+							isActive: 'isActive',
+							tag6: 'tags[5]',
+							tag7: 'tags[6]'
+						});
 						return null;
 					}
 					render( <Wrapper><Client /></Wrapper> );
-					expect( store.data ).toEqual({
-						history: {
-							places: [ undefined, undefined, {
-								city: 'Miami',
-								country: 'US',
-								year: '2017'
-							} ]
-						},
-						isActive: false,
-						tags: [ undefined, undefined, undefined, undefined, undefined, 'laborum', 'proident' ]
-					});
+					const defaultState = createSourceData();
+					const expectedValue = {
+						city3: defaultState.history.places[ 2 ].city,
+						country3: defaultState.history.places[ 2 ].country,
+						year3: defaultState.history.places[ 2 ].year,
+						isActive: defaultState.isActive,
+						tag6: defaultState.tags[ 5 ],
+						tag7: defaultState.tags[ 6 ]
+					};
+					expect( store.data ).toEqual( expectedValue );
 					store.setState({
 						isActive: true,
 						history: {
@@ -474,34 +473,39 @@ describe( 'ReactObservableContext', () => {
 					});
 					await new Promise( resolve => setTimeout( resolve, 10 ) );
 					expect( store.data ).toEqual({
-						history: {
-							places: [ undefined, undefined, {
-								city: 'Marakesh',
-								country: 'Morocco',
-								year: '2017'
-							} ]
-						},
-						isActive: true,
-						tags: [ undefined, undefined, undefined, undefined, undefined, 'laborum', 'proident' ]
+						...expectedValue,
+						city3: 'Marakesh',
+						country3: 'Morocco',
+						isActive: true
 					});
 				} );
 				test( 'holds the complete current state object whenever `@@STATE` appears in the renderKeys', async () => {
 					/** @type {Store<SourceData>} */
 					let store;
 					const Client = () => {
-						store = useContext( Context, [
-							'history.places[2].city',
-							'history.places[2].country',
-							'history.places[2].year',
-							'isActive',
-							'tags[5]',
-							'tags[6]',
-							'@@STATE'
-						]);
+						store = useContext( Context, {
+							city3: 'history.places[2].city',
+							country3: 'history.places[2].country',
+							year3: 'history.places[2].year',
+							isActive: 'isActive',
+							tag6: 'tags[5]',
+							tag7: 'tags[6]',
+							state: '@@STATE'
+						});
 						return null;
 					}
 					render( <Wrapper><Client /></Wrapper> );
-					expect( store.data ).toEqual( createSourceData() );
+					const defaultState = createSourceData();
+					const expectedValue = {
+						city3: defaultState.history.places[ 2 ].city,
+						country3: defaultState.history.places[ 2 ].country,
+						year3: defaultState.history.places[ 2 ].year,
+						isActive: defaultState.isActive,
+						tag6: defaultState.tags[ 5 ],
+						tag7: defaultState.tags[ 6 ],
+						state: defaultState
+					};
+					expect( store.data ).toEqual( expectedValue );
 					store.setState({
 						isActive: true,
 						history: {
@@ -518,7 +522,13 @@ describe( 'ReactObservableContext', () => {
 					updatedDataEquiv.history.places[ 2 ].city = 'Marakesh';
 					updatedDataEquiv.history.places[ 2 ].country = 'Morocco';
 					updatedDataEquiv.isActive = true;
-					expect( store.data ).toEqual( updatedDataEquiv );
+					expect( store.data ).toEqual({
+						...expectedValue,
+						city3: 'Marakesh',
+						country3: 'Morocco',
+						isActive: true,
+						state: updatedDataEquiv
+					});
 				} );
 				test( 'holds an empty object when no renderKeys provided', async () => {
 					/** @type {Store<SourceData>} */
