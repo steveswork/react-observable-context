@@ -99,19 +99,17 @@ class AccessorCache {
 	watchSource( originChanges ) {
 		const accessors = this.#accessors;
 		const atoms = this.#atoms;
-		const updatedPaths = {};
+		const updatedPaths = [];
 		for( const path in atoms ) {
 			if( path !== FULL_STATE_SELECTOR && !has( originChanges, path ) ) { continue }
 			const newAtomVal = this.#getOriginAt( path )
 			if( isEqual( newAtomVal, atoms[ path ].value ) ) { continue }
 			atoms[ path ].setValue( newAtomVal );
-			updatedPaths[ path ] = true;
+			updatedPaths.push( path );
 		}
-		if( isEmpty( updatedPaths ) ) { return }
+		if( !updatedPaths.length ) { return }
 		for( const k in accessors ) {
-			if( !accessors[ k ].refreshDue ) {
-				accessors[ k ].refreshDue = accessors[ k ].paths.some( p => p in updatedPaths );
-			}
+			accessors[ k ].outdatedPaths.push( ...updatedPaths );
 		}
 	}
 }

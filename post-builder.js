@@ -71,6 +71,7 @@ function traverse( directory ) {
 					.then( function () { return { fname: fPath, result: true, t: 'unlink' } } )
 					.catch( function ( e ) { return { fname: fPath, result: e, t: 'unlink' } } )
 				: readFile( fPath, CHARSET ).then( function ( f ) {
+					if( fPath.endsWith( '.ts' ) ) { f = f.replace( /T_[0-9]+/gm, 'T' ) }
 					return writeFile( fPath, trimComments( f ), CHARSET )
 						.then( function () { return { fname: fPath, result: true, t: 'write' } } )
 						.catch( function ( e ) { return { fname: fPath, result: e, t: 'write' } } )

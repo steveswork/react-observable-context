@@ -28,7 +28,8 @@ export const CapitalizedDisplay = ({ text }) => {
 
 	useEffect(() => console.log( `CapitalizedDisplay( ${ text } ) component rendered.....` ));
 
-	return text && `${ text[ 0 ].toUpperCase() }${ text.length > 1 ? text.slice( 1 ) : '' }`
+	return text && `${ text[ 0 ].toUpperCase() }${ text.length > 1 ? text.slice( 1 ) : '' }`;
+
 };
 CapitalizedDisplay.displayName = 'CapitalizedDisplay';
 
