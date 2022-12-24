@@ -84,6 +84,7 @@
     }
   },
   "keywords": [
+    "connect",
     "context",
     "react-hooks",
     "react-context",
@@ -105,10 +106,11 @@
     "url": "git+https://github.com/steveswork/react-observable-context.git"
   },
   "scripts": {
-    "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc && node ./post-builder",
+    "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc && npm run postbuild",
+    "postbuild": "node ./post-builder",
     "test": "eslint --fix && jest --updateSnapshot",
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/main/index.d.ts",
-  "version": "4.0.0-alpha.3"
+  "version": "4.0.0-alpha.4"
 }

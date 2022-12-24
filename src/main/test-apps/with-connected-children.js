@@ -7,43 +7,39 @@ import React, {
 
 import isEmpty from 'lodash.isempty';
 
-import { createContext, useContext } from '..';
+import { connect } from '..';
 
-export const ObservableContext = createContext();
+import { CapitalizedDisplay, ObservableContext } from './normal';
 
-export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
-
-/** @type {React.FC<void>} */
-export const Reset = () => {
-	const { resetState } = useObservableContext();
+/**
+ * @type {FC<{resetState: Store<T>["resetState"]}>}
+ * @template {State} T
+ */
+const Reset = ({ resetState }) => {
 	useEffect(() => console.log( 'Reset component rendered.....' ));
 	return ( <button onClick={ resetState }>reset context</button> );
 };
 Reset.displayName = 'Reset';
+export const ConnectedReset = connect( ObservableContext )( Reset );
 
-/** @type {React.FC<{text: string}>} */
-export const CapitalizedDisplay = ({ text }) => {
-	useEffect(() => console.log( `CapitalizedDisplay( ${ text } ) component rendered.....` ));
-	return text && `${ text[ 0 ].toUpperCase() }${ text.length > 1 ? text.slice( 1 ) : '' }`;
-};
-CapitalizedDisplay.displayName = 'CapitalizedDisplay';
-
-/** @type {React.FC<void>} */
-export const CustomerPhoneDisplay = () => {
-	const { data } = useObservableContext({ phone: 'customer.phone' });
+/**
+ * @type {FC<{data: Store<T>["data"]}>}
+ * @template {State} T
+ */
+const CustomerPhoneDisplay = ({ data }) => {
 	useEffect(() => console.log( 'CustomerPhoneDisplay component rendered.....' ));
 	return `Phone: ${ data.phone ?? 'n.a.' }`;
 };
 CustomerPhoneDisplay.displayName = 'CustomerPhoneDisplay';
+export const ConnectedCustomerPhoneDisplay = connect(
+	ObservableContext, { phone: 'customer.phone' }
+)( CustomerPhoneDisplay );
 
-/** @type {React.FC<void>} */
-export const TallyDisplay = () => {
-	const { data: { color, name, price, type } } = useObservableContext({
-		color: 'color',
-		name: 'customer.name',
-		price: 'price',
-		type: 'type'
-	});
+/**
+ * @type {FC<{data: Store<T>["data"]}>}
+ * @template {State} T
+ */
+const TallyDisplay = ({ data: { color, name, price, type } }) => {
 	useEffect(() => console.log( 'TallyDisplay component rendered.....' ));
 	return (
 		<div style={{ margin: '20px 0 10px' }}>
@@ -62,7 +58,7 @@ export const TallyDisplay = () => {
 				}
 			</div>
 			<div style={{ clear: 'both', paddingLeft: 3 }}>
-				<CustomerPhoneDisplay />
+				<ConnectedCustomerPhoneDisplay />
 			</div>
 			<table>
 				<tbody>
@@ -76,22 +72,32 @@ export const TallyDisplay = () => {
 				</tbody>
 			</table>
 			<div style={{ textAlign: 'right' }}>
-				<Reset />
+				<ConnectedReset />
 			</div>
 		</div>
 	);
 };
 TallyDisplay.displayName = 'TallyDisplay';
+export const ConnectedTallyDisplay = connect( ObservableContext, {
+	color: 'color',
+	name: 'customer.name',
+	price: 'price',
+	type: 'type'
+})( TallyDisplay );
 
-/** @type {React.FC<void>} */
-export const Editor = () => {
-	const { setState } = useObservableContext();
+/**
+ * @type {FC<{setState: Store<T>["setState"]}>}
+ * @template {State} T
+ */
+const Editor = ({ setState }) => {
+
 	const fNameInputRef = useRef();
 	const lNameInputRef = useRef();
 	const phoneInputRef = useRef();
 	const priceInputRef = useRef();
 	const colorInputRef = useRef();
 	const typeInputRef = useRef();
+
 	const updateColor = useCallback(() => {
 		setState({ color: colorInputRef.current.value });
 	}, []);
@@ -116,7 +122,9 @@ export const Editor = () => {
 	const updateType = useCallback(() => {
 		setState({ type: typeInputRef.current.value });
 	}, []);
+
 	useEffect(() => console.log( 'Editor component rendered.....' ));
+
 	return (
 		<fieldset style={{ margin: '10px 0' }}>
 			<legend>Editor</legend>
@@ -158,10 +166,13 @@ export const Editor = () => {
 	);
 };
 Editor.displayName = 'Editor';
+export const ConnectedEditor = connect( ObservableContext )( Editor );
 
-/** @type {React.FC<void>} */
-export const ProductDescription = () => {
-	const { data } = useObservableContext({ c: 'color', t: 'type' });
+/**
+ * @type {FC<{data: Store<T>["data"]}>}
+ * @template {State} T
+ */
+export const ProductDescription = ({ data }) => {
 	useEffect(() => console.log( 'ProductDescription component rendered.....' ));
 	return (
 		<div style={{ fontSize: 24 }}>
@@ -170,10 +181,15 @@ export const ProductDescription = () => {
 	);
 };
 ProductDescription.displayName = 'ProductDescription';
+export const ConnectedProductDescription = connect(
+	ObservableContext, { c: 'color', t: 'type' }
+)( ProductDescription );
 
-/** @type {React.FC<void>} */
-export const PriceSticker = () => {
-	const { data: { p } } = useObservableContext({ p: 'price' });
+/**
+ * @type {FC<{data: Store<T>["data"]}>}
+ * @template {State} T
+ */
+export const PriceSticker = ({ data: { p } }) => {
 	useEffect(() => console.log( 'PriceSticker component rendered.....' ));
 	return (
 		<div style={{ fontSize: 36, fontWeight: 800 }}>
@@ -182,6 +198,7 @@ export const PriceSticker = () => {
 	);
 };
 PriceSticker.displayName = 'PriceSticker';
+export const ConnectedPriceSticker = connect( ObservableContext, { p: 'price' } )( PriceSticker );
 
 /**
  * @type {React.FC<{
@@ -190,6 +207,7 @@ PriceSticker.displayName = 'PriceSticker';
  * }>}
  */
 export const Product = ({ prehooks = undefined, type }) => {
+
 	const [ state, setState ] = useState(() => ({
 		color: 'Burgundy',
 		customer: {
@@ -199,11 +217,14 @@ export const Product = ({ prehooks = undefined, type }) => {
 		price: 22.5,
 		type
 	}));
+
 	useEffect(() => {
 		setState({ type }); // use this to update only the changed state
 		// setState({ ...state, type }); // this will override the context internal state for these values
 	}, [ type ]);
+
 	const overridePricing = useCallback( e => setState({ price: Number( e.target.value ) }), [] );
+
 	return (
 		<div>
 			<div style={{ marginBottom: 10 }}>
@@ -215,11 +236,11 @@ export const Product = ({ prehooks = undefined, type }) => {
 					marginBottom: 10,
 					paddingBottom: 5
 				}}>
-					<Editor />
-					<TallyDisplay />
+					<ConnectedEditor />
+					<ConnectedTallyDisplay />
 				</div>
-				<ProductDescription />
-				<PriceSticker />
+				<ConnectedProductDescription />
+				<ConnectedPriceSticker />
 			</ObservableContext.Provider>
 		</div>
 	);
@@ -228,8 +249,11 @@ Product.displayName = 'Product';
 
 /** @type {React.FC<void>} */
 const App = () => {
+
 	const [ productType, setProductType ] = useState( 'Calculator' );
+
 	const updateType = useCallback( e => setProductType( e.target.value ), [] );
+
 	return (
 		<div className="App">
 			<h1>Demo</h1>
@@ -244,3 +268,15 @@ const App = () => {
 App.displayName = 'App';
 
 export default App;
+
+/**
+ * @typedef {import("..").Store<T>} Store
+ * @template {State} T
+ */
+
+/** @typedef {import("..").State} State */
+
+/**
+ * @typedef {import("react").FC<P>} FC
+ * @template [P={}]
+ */

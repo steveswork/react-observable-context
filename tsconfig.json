@@ -15,6 +15,7 @@
     // Removing this would place the .d.ts files
     // next to the .js files
     "outDir": "dist",
+    "removeComments": false,
     "skipLibCheck": true
   },
   // Change the following to match your project

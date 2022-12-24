@@ -12,6 +12,7 @@ import React, {
 
 import isEmpty from 'lodash.isempty';
 import isEqual from 'lodash.isequal';
+import isPlainObject from 'lodash.isplainobject';
 import omit from 'lodash.omit';
 
 import { v4 as uuid } from 'uuid';
@@ -82,6 +83,28 @@ const makeObservable = Provider => {
 	);
 	Observable.displayName = 'ObservableContext.Provider';
 	return Observable;
+};
+
+/**
+ * @param {ObservableContext<T>} context Refers to the PublicObservableContext<T> type of the ObservableContext<T>
+ * @param {{[selectorKey: string]: string|keyof T}} [selectorMap] Key:value pairs where `key` => arbitrary key given to Store.data property holding the state slices and `value` => property paths to state slices used by this component: see examples below. May use `{..., state: '@@STATE'}` to indicate a desire to obtain the entire state object and assign to a `state` property of Store.data. A change in any of the referenced properties results in this component render. When using `['@@STATE']`, any change in the state object results in this component render.
+ * @returns {(WrappedComponent: C) => MemoExoticComponent<P>}
+ * @template {State} T
+ * @template {PartialStore<T> & {[x:string]:*}} [P=PartialStore<T>]
+ * @template {ComponentType<P>|ExoticComponent<P>} C
+ * @see {ObservableContext<T>}
+ * @see {useContext} for selectorMap sample
+ */
+export const connect = ( context, selectorMap ) => WrappedComponent => {
+	if( !isPlainObject( WrappedComponent ) || !( 'compare' in WrappedComponent ) ) {
+		WrappedComponent = memo( WrappedComponent );
+	}
+	const ConnectedComponent = memo( ownProps => {
+		const store = useContext( context, selectorMap );
+		return( <WrappedComponent { ...store } { ...ownProps } /> );
+	} );
+	ConnectedComponent.displayName = 'ObservableContext.Connected';
+	return ConnectedComponent;
 };
 
 /**
@@ -235,6 +258,11 @@ export const useContext = ( context, selectorMap = {} ) => {
  */
 
 /**
+ * @typedef {{[K in keyof Store<T>]?: Store<T>[K]}} PartialStore
+ * @template {State} T
+ */
+
+/**
  * @typedef {import("../types").Store<T>} Store
  * @template {State} T
  */
@@ -251,6 +279,21 @@ export const useContext = ( context, selectorMap = {} ) => {
 /** @typedef {import("../types").Data} Data */
 
 /** @typedef {import("react").ReactNode} ReactNode */
+
+/**
+ * @typedef {import('react').MemoExoticComponent<ComponentType<P>} MemoExoticComponent
+ * @template {{[x:string]:*}} [P={}]
+ */
+
+/**
+ * @typedef {import("react").ExoticComponent<ComponentType<P>>} ExoticComponent
+ * @template {{[x:string]:*}} [P={}]
+ */
+
+/**
+ * @typedef {import("react").ComponentType<P>} ComponentType
+ * @template [P=any]
+ */
 
 /**
  * @typedef {import("react").FC<P>} FC
