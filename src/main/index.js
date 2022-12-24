@@ -19,7 +19,7 @@ import { v4 as uuid } from 'uuid';
 
 import useRenderKeyProvider from './hooks/use-render-key-provider';
 
-import useStore from './hooks/use-store'
+import useStore from './hooks/use-store';
 
 export class UsageError extends Error {}
 
