@@ -106,9 +106,8 @@ describe( 'utils module', () => {
 		} );
 	} );
 	describe( 'mapPathsToObject(...)', () => {
-		let FULL_STATE_SELECTOR, source, propertyPaths;
+		let source, propertyPaths;
 		beforeAll(() => {
-			FULL_STATE_SELECTOR = require( '../constants' ).FULL_STATE_SELECTOR;
 			source = require( '../test-artifacts/data/create-state-obj' ).default();
 			source.matrix = [
 				[ 0, 3, 9 ],
@@ -127,7 +126,7 @@ describe( 'utils module', () => {
 				'matrix.0.2'
 			]);
 		});
-		test( 'returns state hierarchy matching arranged property paths', () => {
+		test( 'returns a subset of the source pbject matching arranged property paths', () => {
 			expect( utils.mapPathsToObject( source, propertyPaths ) ).toEqual({
 				address: '760 Midwood Street, Harborton, Massachusetts, 7547',
 				friends: [ undefined, source.friends[ 1 ] ],
@@ -150,13 +149,16 @@ describe( 'utils module', () => {
 				tags: [ undefined, undefined, undefined, undefined, source.tags[ 4 ] ]
 			});
 		} );
-		test( 'returns empty object for empty property paths', () => {
-			expect( utils.mapPathsToObject( source, [] ) ).toEqual( {} );
-		} );
-		test( 'returns complete initial state for property paths consisting of `' + FULL_STATE_SELECTOR + '`', () => {
-			const paths = require( 'lodash.clonedeep' )( propertyPaths );
-			paths.splice( 2, 0, FULL_STATE_SELECTOR )
-			expect( utils.mapPathsToObject( source, paths ) ).toEqual( source );
-		} );
+		test(
+			'returns a subset of the source object following setstate `change` object rules for array/indexed-object mutations',
+			() => expect( utils.mapPathsToObject( source, [ 'matrix.0.1', 'matrix.0.2' ] ) ).toEqual({
+				matrix: {
+					0: {
+						1: source.matrix[ 0 ][ 1 ],
+						2: source.matrix[ 0 ][ 2 ]
+					}
+				}
+			})
+		);
 	} );
 } );

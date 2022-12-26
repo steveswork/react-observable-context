@@ -3,8 +3,6 @@ import has from 'lodash.has';
 import isPlainObject from 'lodash.isplainobject';
 import set from 'lodash.set';
 
-import { FULL_STATE_SELECTOR } from '../constants';
-
 class None {};
 export const none = new None();
 
@@ -81,8 +79,6 @@ export function makeReadonly( v ) {
  * @template {{[x: string]:*}} T
  */
 export function mapPathsToObject( source, propertyPaths ) {
-	if( !propertyPaths.length ) { return {} }
-	if( propertyPaths.includes( FULL_STATE_SELECTOR ) ) { return source }
 	const object = {};
 	for( const path of arrangePropertyPaths( propertyPaths ) ) {
 		const value = get( source, path );

@@ -4,6 +4,8 @@ import clonedeep from 'lodash.clonedeep';
 
 import { v4 } from 'uuid';
 
+import { FULL_STATE_SELECTOR } from '../../../constants';
+
 import { mapPathsToObject } from '../../../utils';
 
 import Storage from '../../../model/storage';
@@ -59,7 +61,11 @@ const useStore = ( prehooks, value, storage ) => {
 	/** @type {StoreInternal<T>["resetState"]} */
 	const resetState = useCallback(( propertyPaths = [] ) => {
 		const original = _storage.getItem( storageKey.current );
-		const resetData = mapPathsToObject( original, propertyPaths );
+		const resetData = !propertyPaths.length
+			? {}
+			: propertyPaths.includes( FULL_STATE_SELECTOR )
+				? original
+				: mapPathsToObject( original, propertyPaths );
 		( !( 'resetState' in prehooksRef.current ) ||
 			prehooksRef.current.resetState( resetData, {
 				current: clonedeep( state ), original

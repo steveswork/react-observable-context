@@ -2,6 +2,8 @@ import { renderHook } from '@testing-library/react-hooks';
 
 import '../../../test-artifacts/suppress-render-compat';
 
+import { FULL_STATE_SELECTOR } from '../../../constants';
+
 import useStore, { deps } from '.';
 
 beforeAll(() => { jest.spyOn( deps, 'uuid' ).mockReturnValue( expect.any( String ) ) });
@@ -132,19 +134,53 @@ describe( 'useStore', () => {
 					// please see 'prehooks effects' describe block for alternate scenario
 					expect( setStateSpy ).toHaveBeenCalled();
 				} );
+				describe( 'with no arguments', () => {
+					test( 'runs the available prehook with an empty update data', () => {
+						expect( prehooks.resetState.mock.calls[ 0 ][ 0 ] ).toEqual({});
+					} );
+					test( 'attempts to update current state with an empty update data', () => {
+						expect(setStateSpy.mock.calls[ 0 ][ 1 ] ).toEqual({});
+					} );
+				} );
 				describe( 'with arguments', () => {
 					let stateKey0, resetData;
 					beforeAll(() => {
-						jest.clearAllMocks();
+						prehooks.resetState.mockClear();
+						setStateSpy.mockClear();
 						stateKey0 = Object.keys( initialState )[ 0 ];
 						resetData = { [ stateKey0 ]: initialState[ stateKey0 ] };
 						store.resetState([ stateKey0 ]);
 					} );
-					test( 'runs the available prehook with `resetData` corresponding to resetState argument', () => {
+					test( 'runs the available prehook with update data corresponding to resetState argument', () => {
 						expect( prehooks.resetState.mock.calls[ 0 ][ 0 ] ).toEqual( resetData );
 					} );
-					test( 'merges the `resetData` into current state', () => {
+					test( 'merges the update data into current state', () => {
 						expect( setStateSpy.mock.calls[ 0 ][ 1 ] ).toEqual( resetData );
+					} );
+					describe( 'containing the `' + FULL_STATE_SELECTOR + '` path', () => {
+						let initialState, storageGetItemMockImpl;
+						beforeAll(() => {
+							storageGetItemMockImpl = storage.getItem.getMockImplementation();
+							prehooks.resetState.mockClear();
+							setStateSpy.mockClear();
+							initialState = { ...initialState, b: { z: expect.anything() } };
+							storage.getItem.mockReset().mockReturnValue( initialState );
+							const { result } = renderHook(
+								({ prehooks: p, storage: s, value: v }) => useStore( p, v, s ),
+								{ initialProps: { prehooks, storage, value: initialState } }
+							);
+							const store = result.current;
+							store.resetState([ 'a', FULL_STATE_SELECTOR, 'b.z' ]);
+						});
+						afterAll(() => {
+							storage.getItem.mockReset().mockImplementation( storageGetItemMockImpl );
+						});
+						test( 'runs the available prehook with update data equaling the initial state', () => {
+							expect( prehooks.resetState.mock.calls[ 0 ][ 0 ] ).toEqual( initialState );
+						} );
+						test( 'merges the initial state into current state', () => {
+							expect( setStateSpy.mock.calls[ 0 ][ 1 ] ).toEqual( initialState );
+						} );
 					} );
 				} );
 			} );
