@@ -1,7 +1,7 @@
 import clonedeep from 'lodash.clonedeep';
 
 /**
- * @class
+ * @extends {IStorage<T>}
  * @template {State} T
  */
 class MemoryStorage {
@@ -10,14 +10,17 @@ class MemoryStorage {
 
 	constructor() { this.#data = null }
 
+	/** @type {IStorage<T>["clone"]} */
+	clone( data ) { return clonedeep( data ) }
+
 	/** @type {IStorage<T>[ "getItem" ]} */
-	getItem( key ) { return clonedeep( this.#data ) }
+	getItem( key ) { return this.#data }
 
 	/** @type {IStorage<T>[ "removeItem" ]} */
 	removeItem( key ) { this.#data = null }
 
 	/** @type {IStorage<T>[ "setItem" ]} */
-	setItem( key, data ) { this.#data = clonedeep( data ) }
+	setItem( key, data ) { this.#data = data }
 }
 
 /**
@@ -29,6 +32,9 @@ class SessionStorage {
 	#storage;
 
 	constructor() { this.#storage = globalThis.sessionStorage }
+
+	/** @type {IStorage<T>[ "clone" ]} */
+	clone( data ) { return data }
 
 	/** @type {IStorage<T>[ "getItem" ]} */
 	getItem( key ) { return JSON.parse( this.#storage.getItem( key ) ) }
@@ -57,6 +63,9 @@ class Storage {
 	}
 
 	get isKeyRequired() { return this.#storage instanceof SessionStorage }
+
+	/** @type {IStorage<T>[ "clone" ]} */
+	clone( data ) { return this.#storage.clone( data ) }
 
 	/** @type {IStorage<T>[ "getItem" ]} */
 	getItem( key ) { return this.#storage.getItem( key ) }

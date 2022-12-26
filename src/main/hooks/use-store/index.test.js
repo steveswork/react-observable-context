@@ -30,28 +30,34 @@ describe( 'useStore', () => {
 				unlinkCache: expect.any( Function )
 			}) );
 		} );
-		test( 'retains the initial state in storage', () => {
-			const setItem = jest.fn()
+		test( 'retains a clone of the initial state in storage', () => {
+			const clone = jest.fn().mockReturnValue( initialState );
+			const removeItem = () => {};
+			const setItem = jest.fn();
 			renderHook(
 				({ prehooks: p, value: v, storage: s }) => useStore( p, v, s ), {
 					initialProps: {
 						prehooks: {},
 						value: initialState,
-						storage: { setItem, removeItem: () => {} }
+						storage: { clone, removeItem, setItem }
 					}
 				}
 			);
+			expect( clone ).toHaveBeenCalledTimes( 1 );
+			expect( clone ).toHaveBeenCalledWith( initialState );
 			expect( setItem ).toHaveBeenCalledTimes( 1 );
-			expect( setItem ).toHaveBeenCalledWith( expect.any( String ), initialState );
+			expect( setItem.mock.calls[ 0 ][ 1 ] ).toStrictEqual( initialState );
 		} );
 		test( 'cleans up retained state from storage on store unmount if storage supported', () => {
+			const clone = v => v;
+			const setItem = () => {};
 			const removeItem = jest.fn();
 			const { unmount } = renderHook(
 				({ prehooks: p, value: v, storage: s }) => useStore( p, v, s ), {
 					initialProps: {
 						prehooks: {},
 						value: initialState,
-						storage: { setItem: () => {}, removeItem }
+						storage: { clone, removeItem, setItem }
 					}
 				}
 			);
@@ -82,6 +88,7 @@ describe( 'useStore', () => {
 		let storage;
 		beforeAll(() => {
 			storage = {
+				clone: jest.fn().mockReturnValue( initialState ),
 				getItem: jest.fn().mockReturnValue( initialState ),
 				removeItem: jest.fn(),
 				setItem: jest.fn()
@@ -158,12 +165,14 @@ describe( 'useStore', () => {
 						expect( setStateSpy.mock.calls[ 0 ][ 1 ] ).toEqual( resetData );
 					} );
 					describe( 'containing the `' + FULL_STATE_SELECTOR + '` path', () => {
-						let initialState, storageGetItemMockImpl;
+						let initialState, storageCloneMockImpl, storageGetItemMockImpl;
 						beforeAll(() => {
+							storageCloneMockImpl = storage.clone.getMockImplementation();
 							storageGetItemMockImpl = storage.getItem.getMockImplementation();
 							prehooks.resetState.mockClear();
 							setStateSpy.mockClear();
 							initialState = { ...initialState, b: { z: expect.anything() } };
+							storage.clone.mockReset().mockReturnValue( initialState );
 							storage.getItem.mockReset().mockReturnValue( initialState );
 							const { result } = renderHook(
 								({ prehooks: p, storage: s, value: v }) => useStore( p, v, s ),
@@ -173,6 +182,7 @@ describe( 'useStore', () => {
 							store.resetState([ 'a', FULL_STATE_SELECTOR, 'b.z' ]);
 						});
 						afterAll(() => {
+							storage.clone.mockReset().mockImplementation( storageCloneMockImpl );
 							storage.getItem.mockReset().mockImplementation( storageGetItemMockImpl );
 						});
 						test( 'runs the available prehook with update data equaling the initial state', () => {

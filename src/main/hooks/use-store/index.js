@@ -60,7 +60,7 @@ const useStore = ( prehooks, value, storage ) => {
 
 	/** @type {StoreInternal<T>["resetState"]} */
 	const resetState = useCallback(( propertyPaths = [] ) => {
-		const original = _storage.getItem( storageKey.current );
+		const original = _storage.clone( _storage.getItem( storageKey.current ) );
 		const resetData = !propertyPaths.length
 			? {}
 			: propertyPaths.includes( FULL_STATE_SELECTOR )
@@ -89,7 +89,7 @@ const useStore = ( prehooks, value, storage ) => {
 
 	useEffect(() => {
 		const sKey = storageKey.current;
-		_storage.setItem( sKey, value );
+		_storage.setItem( sKey, _storage.clone( value ) );
 		return () => _storage.removeItem( sKey );
 	}, []);
 

@@ -4,6 +4,7 @@ export default null;
 
 /**
  * @typedef {{
+ * 		clone: (data: T) => T,
  * 		getItem: (key: string) => T,
  * 		removeItem: (key: string) => void,
  * 		setItem: (key: string, data: T) => void

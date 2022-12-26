@@ -38,6 +38,14 @@ describe( 'Storage class', () => {
 		test( 'requires a key for entries into this storage', () => {
 			expect( storage.isKeyRequired ).toBe( true );
 		} );
+		describe( 'clone(...)', () => {
+			test( 'performs no cloning of the data - not needed as serialization operation takes care of this', () => {
+				const data = { a: 30, b: false, c: 'test', d: [ 8 ], e: { w: 55 } };
+				const cloned = storage.clone( data );
+				expect( cloned ).toBe( data );
+				expect( cloned ).toStrictEqual( data );
+			} );
+		} );
 		describe( 'getItem(...)', () => {
 			const key = 'a';
 			let _data;
@@ -84,6 +92,14 @@ describe( 'Storage class', () => {
 		test( 'does not require any key for entries into this storage', () => {
 			expect( storage.isKeyRequired ).toBe( false );
 		} );
+		describe( 'clone(...)', () => {
+			test( 'returns a copy of the data', () => {
+				const data = { a: 30, b: false, c: 'test', d: [ 8 ], e: { w: 55 } };
+				const cloned = storage.clone( data );
+				expect( cloned ).not.toBe( data );
+				expect( cloned ).toStrictEqual( data );
+			} );
+		} );
 		describe( 'getItem(...)', () => {
 			let _data;
 			beforeAll(() => {
@@ -94,8 +110,8 @@ describe( 'Storage class', () => {
 			test( 'does not get data from the session storage', () => {
 				expect( mockImpls.getItem ).not.toHaveBeenCalled();
 			} );
-			test( 'gets a copy of the stored data', () => {
-				expect( _data ).not.toBe( data );
+			test( 'gets the stored data', () => {
+				expect( _data ).toBe( data );
 				expect( _data ).toStrictEqual( data );
 			} );
 		} );
