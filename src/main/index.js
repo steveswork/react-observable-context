@@ -3,6 +3,7 @@ import React, {
 	cloneElement,
 	createContext as _createContext,
 	memo,
+	useCallback,
 	useContext as _useContext,
 	useEffect,
 	useMemo,
@@ -149,7 +150,13 @@ export const createContext = () => {
 export const useContext = ( context, selectorMap = {} ) => {
 
 	/** @type {StoreInternal<T>} */
-	const { getState: _getState, subscribe, unlinkCache, ...store } = _useContext( context );
+	const {
+		getState: _getState,
+		resetState: _resetState,
+		subscribe,
+		unlinkCache,
+		...store
+	} = _useContext( context );
 
 	const [ clientId ] = useState( uuid );
 
@@ -188,6 +195,12 @@ export const useContext = ( context, selectorMap = {} ) => {
 		hasChanges && setData({ ...data });
 	};
 
+	/**
+	 * @type {Store<T>["resetState"]}
+	 * @template {State} T
+	 */
+	const resetState = useCallback(( propertyPath = _renderKeys ) => _resetState( propertyPath ), [ _renderKeys ]);
+
 	useEffect(() => { // sync data states with new renderKeys
 		if( isEmpty( _renderKeys ) ) {
 			!isEqual( {}, data ) && setData( {} );
@@ -206,7 +219,7 @@ export const useContext = ( context, selectorMap = {} ) => {
 		};
 	}, [ _renderKeys ]);
 
-	return useMemo(() => ({ data, ...store }), [ data ]);
+	return useMemo(() => ({ data, resetState, ...store }), [ data ]);
 };
 
 /**

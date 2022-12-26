@@ -132,6 +132,21 @@ describe( 'useStore', () => {
 					// please see 'prehooks effects' describe block for alternate scenario
 					expect( setStateSpy ).toHaveBeenCalled();
 				} );
+				describe( 'with arguments', () => {
+					let stateKey0, resetData;
+					beforeAll(() => {
+						jest.clearAllMocks();
+						stateKey0 = Object.keys( initialState )[ 0 ];
+						resetData = { [ stateKey0 ]: initialState[ stateKey0 ] };
+						store.resetState([ stateKey0 ]);
+					} );
+					test( 'runs the available prehook with `resetData` corresponding to resetState argument', () => {
+						expect( prehooks.resetState.mock.calls[ 0 ][ 0 ] ).toEqual( resetData );
+					} );
+					test( 'merges the `resetData` into current state', () => {
+						expect( setStateSpy.mock.calls[ 0 ][ 1 ] ).toEqual( resetData );
+					} );
+				} );
 			} );
 			describe( 'setState', () => {
 				beforeAll(() => {

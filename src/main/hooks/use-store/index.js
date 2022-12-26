@@ -4,6 +4,8 @@ import clonedeep from 'lodash.clonedeep';
 
 import { v4 } from 'uuid';
 
+import { mapPathsToObject } from '../../../utils';
+
 import Storage from '../../../model/storage';
 
 import usePrehooksRef from '../use-prehooks-ref';
@@ -55,13 +57,14 @@ const useStore = ( prehooks, value, storage ) => {
 	const onChange = changes => listeners.forEach( listener => listener( changes ) );
 
 	/** @type {StoreInternal<T>["resetState"]} */
-	const resetState = useCallback(() => {
+	const resetState = useCallback(( propertyPaths = [] ) => {
 		const original = _storage.getItem( storageKey.current );
+		const resetData = mapPathsToObject( original, propertyPaths );
 		( !( 'resetState' in prehooksRef.current ) ||
-			prehooksRef.current.resetState({
+			prehooksRef.current.resetState( resetData, {
 				current: clonedeep( state ), original
-			})
-		) && deps.setState( state, original, onChange )
+			} )
+		) && deps.setState( state, resetData, onChange )
 	}, []);
 
 	/** @type {StoreInternal<T>["setState"]} */
@@ -113,6 +116,11 @@ export default useStore;
 
 /**
  * @typedef {import("../../../types").IStorage<T>} IStorage
+ * @template {State} T
+ */
+
+/**
+ * @typedef {import('../../../types').PartialState<T>} PartialState
  * @template {State} T
  */
 

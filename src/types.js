@@ -27,7 +27,10 @@ export default null;
 
 /**
  * @typedef {{
- * 		resetState?: (state: { current: T, original: T}) => boolean,
+ * 		resetState?: (
+ * 			resetData: PartialState<T>,
+ * 			state: {current: T, original: T}
+ * 		) => boolean,
  * 		setState?: (newChanges: PartialState<T>) => boolean
  * }} Prehooks
  * @template {State} T
@@ -47,7 +50,7 @@ export default null;
 /**
  * @typedef {{
  *		data: Data,
- *		resetState: VoidFunction,
+ *		resetState: (propertyPaths?: string[]) => void,
  *		setState: (changes: PartialState<T>) => void,
  * }} Store
  * @template {State} T

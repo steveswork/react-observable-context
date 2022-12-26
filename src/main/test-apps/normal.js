@@ -17,7 +17,8 @@ export const useObservableContext = selectorMap => useContext( ObservableContext
 export const Reset = () => {
 	const { resetState } = useObservableContext();
 	useEffect(() => console.log( 'Reset component rendered.....' ));
-	return ( <button onClick={ resetState }>reset context</button> );
+	const reset = useCallback(() => resetState([ '@@STATE' ]), [ resetState ]);
+	return ( <button onClick={ reset }>reset context</button> );
 };
 Reset.displayName = 'Reset';
 

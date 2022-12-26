@@ -383,7 +383,7 @@ describe( 'ReactObservableContext', () => {
 			describe( 'when `resetState` prehook does not exist on the context', () => {
 				test( 'completes `store.resetState` method call', async () => {
 					const { renderCount } = perf( React );
-					const prehooks = Object.freeze( expect.any( Object ) );
+					const prehooks = { resetState: jest.fn().mockReturnValue( true ) } // Object.freeze( expect.any( Object ) );
 					render( <Product prehooks={ prehooks } type="Computer" /> );
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
@@ -413,12 +413,37 @@ describe( 'ReactObservableContext', () => {
 					prehooks.resetState.mockClear();
 					fireEvent.click( screen.getByRole( 'button', { name: 'reset context' } ) );
 					expect( prehooks.resetState ).toHaveBeenCalledTimes( 1 );
-					expect( prehooks.resetState ).toHaveBeenCalledWith( expect.objectContaining({
+					expect( prehooks.resetState ).toHaveBeenCalledWith({
+						// data slices from original state to reset current state slices
+						color: 'Burgundy',
+						customer: {
+							name: { first: null, last: null },
+							phone: null
+						},
+						price: 22.5,
+						type: 'Computer'
+					}, {
 						// current: context state value after the `update type` & `update color` button clicks
-						current: expect.objectContaining({ color: 'Teal', price: 22.5, type: 'Bag' }),
+						current: {
+							color: 'Teal',
+							customer: {
+								name: { first: null, last: null },
+								phone: null
+							},
+							price: 22.5,
+							type: 'Bag'
+						},
 						// original: obtained from the './normal' Product >> Provider value prop
-						original: expect.objectContaining({ color: 'Burgundy', price: 22.5, type: 'Computer' })
-					}) );
+						original: {
+							color: 'Burgundy',
+							customer: {
+								name: { first: null, last: null },
+								phone: null
+							},
+							price: 22.5,
+							type: 'Computer'
+						}
+					});
 				} );
 				test( 'completes `store.setState` method call if `setState` prehook returns TRUTHY', async () => {
 					const { renderCount } = perf( React );
@@ -580,7 +605,6 @@ describe( 'ReactObservableContext', () => {
 						resetState: expect.any( Function ),
 						setState: expect.any( Function )
 					});
-					expect( compOneProps ).toStrictEqual( compTwoProps );
 				} );
 				test( 'accepts own props (i.e. additional props at runtime)', () => {
 					let capturedProps;
