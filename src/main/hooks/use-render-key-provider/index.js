@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef } from 'react';
 
 /**
  * @type {Provider<T>}
@@ -16,12 +16,14 @@ const getCurrKeys = selectorMap => {
  * @template {State} T
  */
 const useRenderKeyProvider = selectorMap => {
-	const [ renderKeys, setRenderKeys ] = useState(() => getCurrKeys( selectorMap ));
+	const renderKeys = useRef([]);
 	const currKeys = getCurrKeys( selectorMap );
-	( renderKeys.length !== currKeys.length ||
-		renderKeys.some(( k, i ) => k !== currKeys[ i ])
-	) && setRenderKeys( currKeys );
-	return renderKeys;
+	if( ( renderKeys.current.length !== currKeys.length ||
+		renderKeys.current.some(( k, i ) => k !== currKeys[ i ])
+	) ) {
+		renderKeys.current = currKeys;
+	}
+	return renderKeys.current;
 };
 
 export default useRenderKeyProvider;

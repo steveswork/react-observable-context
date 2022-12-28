@@ -1,7 +1,10 @@
 import React from 'react';
 
+import clonedeep from 'lodash.clonedeep';
+
 import { cleanup as cleanupPerfTest, perf, wait } from 'react-performance-testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { renderHook } from '@testing-library/react-hooks';
 
 import '@testing-library/jest-dom';
 
@@ -383,7 +386,7 @@ describe( 'ReactObservableContext', () => {
 			describe( 'when `resetState` prehook does not exist on the context', () => {
 				test( 'completes `store.resetState` method call', async () => {
 					const { renderCount } = perf( React );
-					const prehooks = { resetState: jest.fn().mockReturnValue( true ) } // Object.freeze( expect.any( Object ) );
+					const prehooks = {};
 					render( <Product prehooks={ prehooks } type="Computer" /> );
 					fireEvent.change( screen.getByLabelText( 'New Type:' ), { target: { value: 'Bag' } } );
 					fireEvent.click( screen.getByRole( 'button', { name: 'update type' } ) );
@@ -679,9 +682,24 @@ describe( 'ReactObservableContext', () => {
 			} );
 		} );
 		describe( 'useContext(...)', () => {
-			let Wrapper;
+			let Client, renderUseContextHook, Wrapper;
 			beforeAll(() => {
+				/**
+				 * @type {(initialProps: RenderUseContextProps) => RenderHookResult<
+				 *	RenderUseContextProps, ContextConsumerMock, Renderer<RenderUseContextProps>
+				 * >}
+				 */
+				renderUseContextHook = initialProps => renderHook(
+					p => useContext( p.context, p.selectorMap ),
+					{ initialProps }
+				);
 				/* eslint-disable react/display-name */
+				Client = ({ selectorMap, onChange }) => {
+					const store = useContext( ObservableContext, selectorMap );
+					React.useMemo(() => onChange( store ), [ store ]);
+					return null;
+				};
+				Client.displayName = 'Client';
 				Wrapper = ({ children }) => (
 					<ObservableContext.Provider value={ createSourceData() }>
 						{ children }
@@ -693,33 +711,246 @@ describe( 'ReactObservableContext', () => {
 			test( 'returns a observable context store', () => {
 				/** @type {Store<SourceData>} */
 				let store;
-				const Client = () => {
-					store = useContext( ObservableContext, [ 'tags' ] );
-					return null;
-				};
-				render( <Wrapper><Client /></Wrapper> );
+				const onChange = s => { store = s };
+				render(
+					<Wrapper>
+						<Client onChange={ onChange } selectorMap={[ 'tags' ]} />
+					</Wrapper>
+				);
 				expect( store ).toEqual({
 					data: expect.any( Object ),
 					resetState: expect.any( Function ),
 					setState: expect.any( Function )
 				});
 			} );
-			describe( 'store data', () => {
-				test( 'carries the latest state data as referenced by the renderKeys', async () => {
-					/** @type {Store<SourceData>} */
-					let store;
-					const Client = () => {
-						store = useContext( ObservableContext, {
-							city3: 'history.places[2].city',
-							country3: 'history.places[2].country',
+			describe( 'selectorMap update', () => {
+				describe( 'normal flow', () => {
+					let mockConsumer, mockSetData, mockUnsubscribe;
+					let reactUseEffectSpy, reactUseContextSpy, reactUseStateSpy;
+					let selectorMapOnRender, selectorMapOnRerender;
+					beforeAll(() => {
+						selectorMapOnRender = {
 							year3: 'history.places[2].year',
 							isActive: 'isActive',
-							tag6: 'tags[5]',
-							tag7: 'tags[6]'
+							tag6: 'tags[5]'
+						};
+						selectorMapOnRerender = clonedeep( selectorMapOnRender );
+						selectorMapOnRerender.country3 = 'history.places[2].country';
+						mockSetData = jest.fn();
+						mockUnsubscribe = jest.fn();
+						reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+						reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([
+							Object.values( selectorMapOnRender ).reduce(
+								( o, k ) => { o[ k ] = expect.anything(); return o }, {}
+							),
+							mockSetData
+						]);
+						mockConsumer = {
+							getState: () => Object.values( selectorMapOnRerender ).reduce(
+								( o, k ) => { o[ k ] = expect.anything(); return o }, {}
+							),
+							resetState: () => {},
+							subscribe: jest.fn().mockReturnValue( mockUnsubscribe ),
+							unlinkCache: jest.fn()
+						};
+						reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+						const { rerender } = renderUseContextHook({
+							context: ObservableContext,
+							selectorMap: selectorMapOnRender
 						});
+						mockConsumer.subscribe.mockClear();
+						mockConsumer.unlinkCache.mockClear();
+						reactUseEffectSpy.mockClear();
+						rerender({
+							context: ObservableContext,
+							selectorMap: selectorMapOnRerender
+						});
+					});
+					afterAll(() => {
+						reactUseContextSpy.mockRestore();
+						reactUseEffectSpy.mockRestore();
+						reactUseStateSpy.mockRestore();
+					} );
+					test( 'adjusts the store on selctorMap change', () => {
+						expect( reactUseEffectSpy.mock.calls[ 0 ][ 1 ] ).toEqual([
+							Object.values( selectorMapOnRerender )
+						]);
+					} );
+					test( 'cleans up all previous associations to the consumer', () => {
+						expect( mockUnsubscribe ).toHaveBeenCalled();
+						expect( mockConsumer.unlinkCache ).toHaveBeenCalled();
+					} );
+					describe( 'when the new selectorMap is not empty', () => {
+						test( 'refreshes state data', () => {
+							expect( mockSetData ).toHaveBeenCalled();
+						} );
+						test( 'sets up new subscription with the consumer', () => {
+							expect( mockConsumer.subscribe ).toHaveBeenCalled();
+						} );
+					} );
+				} );
+				describe( 'when the new selectorMap is empty', () => {
+					describe( 'and existing data is not empty', () => {
+						let mockConsumer, mockSetData, mockUnsubscribe;
+						let reactUseEffectSpy, reactUseContextSpy, reactUseStateSpy;
+						let selectorMapOnRender, selectorMapOnRerender;
+						beforeAll(() => {
+							selectorMapOnRender = {
+								year3: 'history.places[2].year',
+								isActive: 'isActive',
+								tag6: 'tags[5]'
+							};
+							selectorMapOnRerender = {};
+							mockSetData = jest.fn();
+							mockUnsubscribe = jest.fn();
+							reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+							reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([
+								Object.values( selectorMapOnRender ).reduce(
+									( o, k ) => { o[ k ] = expect.anything(); return o }, {}
+								),
+								mockSetData
+							]);
+							mockConsumer = {
+								getState: () => Object.values( selectorMapOnRerender ).reduce(
+									( o, k ) => { o[ k ] = expect.anything(); return o }, {}
+								),
+								resetState: () => {},
+								subscribe: jest.fn().mockReturnValue( mockUnsubscribe ),
+								unlinkCache: jest.fn()
+							};
+							reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+							const { rerender } = renderUseContextHook({
+								context: ObservableContext,
+								selectorMap: selectorMapOnRender
+							});
+							mockConsumer.subscribe.mockClear();
+							mockConsumer.unlinkCache.mockClear();
+							reactUseEffectSpy.mockClear();
+							mockUnsubscribe.mockClear();
+							rerender({
+								context: ObservableContext,
+								selectorMap: selectorMapOnRerender
+							});
+						});
+						afterAll(() => {
+							reactUseContextSpy.mockRestore();
+							reactUseEffectSpy.mockRestore();
+							reactUseStateSpy.mockRestore();
+						} );
+						test( 'adjusts the store on selctorMap change', () => {
+							expect(	reactUseEffectSpy.mock.calls[ 0 ][ 1 ] ).toEqual([[]]);
+						} );
+						test( 'cleans up all previous associations to the consumer', () => {
+							expect( mockUnsubscribe ).toHaveBeenCalled();
+							expect( mockConsumer.unlinkCache ).toHaveBeenCalled();
+						} );
+						test( 'refreshes state data with empty object', () => {
+							expect( mockSetData ).toHaveBeenCalledWith({});
+						} );
+						test( 'does not set up new subscription with the consumer', () => {
+							expect( mockConsumer.subscribe ).not.toHaveBeenCalled();
+						} );
+					} );
+					describe( 'and existing data is empty', () => {
+						let mockConsumer, mockSetData, mockUnsubscribe;
+						let reactUseEffectSpy, reactUseContextSpy, reactUseStateSpy;
+						let selectorMapOnRender;
+						beforeAll(() => {
+							selectorMapOnRender = {
+								year3: 'history.places[2].year',
+								isActive: 'isActive',
+								tag6: 'tags[5]'
+							};
+							mockSetData = jest.fn();
+							mockUnsubscribe = jest.fn();
+							reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+							reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([ {}, mockSetData ]);
+							mockConsumer = {
+								getState: () => ({}),
+								resetState: () => {},
+								subscribe: jest.fn().mockReturnValue( mockUnsubscribe ),
+								unlinkCache: jest.fn()
+							};
+							reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+							const { rerender } = renderUseContextHook({
+								context: ObservableContext,
+								selectorMap: selectorMapOnRender
+							});
+							mockConsumer.subscribe.mockClear();
+							mockConsumer.unlinkCache.mockClear();
+							reactUseEffectSpy.mockClear();
+							mockUnsubscribe.mockClear();
+							rerender({ context: ObservableContext });
+						});
+						afterAll(() => {
+							reactUseContextSpy.mockRestore();
+							reactUseEffectSpy.mockRestore();
+							reactUseStateSpy.mockRestore();
+						} );
+						test( 'adjusts the store on selctorMap change', () => {
+							expect( reactUseEffectSpy.mock.calls[ 0 ][ 1 ] ).toEqual([[]]);
+						} );
+						test( 'performs no state data update', () => {
+							expect( mockSetData ).not.toHaveBeenCalled();
+						} );
+						test( 'does not set up new subscription with the consumer', () => {
+							expect( mockConsumer.subscribe ).not.toHaveBeenCalled();
+						} );
+						describe( 'and previous property path is empty', () => {
+							test( 'skips cleanup: no previous associations to the consumer', () => {
+								const mockSetData = jest.fn();
+								const mockUnsubscribe = jest.fn();
+								const reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+								const reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([ {}, mockSetData ]);
+								const mockConsumer = {
+									getState: () => ({}),
+									resetState: () => {},
+									subscribe: jest.fn().mockReturnValue( mockUnsubscribe ),
+									unlinkCache: jest.fn()
+								};
+								const reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+								const { rerender } = renderUseContextHook({ context: ObservableContext });
+								mockConsumer.subscribe.mockClear();
+								mockConsumer.unlinkCache.mockClear();
+								reactUseEffectSpy.mockClear();
+								mockUnsubscribe.mockClear();
+								rerender({ context: ObservableContext, selectorMap: {} });
+								expect( mockConsumer.unlinkCache ).not.toHaveBeenCalled();
+								expect( mockUnsubscribe ).not.toHaveBeenCalled();
+								reactUseContextSpy.mockRestore();
+								reactUseEffectSpy.mockRestore();
+								reactUseStateSpy.mockRestore();
+							} );
+						} );
+					} );
+				} );
+			} );
+			describe( 'store.data', () => {
+				let Client;
+				beforeAll(() => {
+					Client = ({ selectorMap, onChange }) => {
+						const store = useContext( ObservableContext, selectorMap );
+						React.useMemo(() => onChange( store ), [ store ]);
 						return null;
-					}
-					render( <Wrapper><Client /></Wrapper> );
+					};
+					Client.displayName = 'Client';
+				});
+				test( 'carries the latest state data as referenced by the selectorMap', async () => {
+					/** @type {Store<SourceData>} */
+					let store;
+					const onChange = s => { store = s };
+					render(
+						<Wrapper>
+							<Client onChange={ onChange } selectorMap={{
+								city3: 'history.places[2].city',
+								country3: 'history.places[2].country',
+								year3: 'history.places[2].year',
+								isActive: 'isActive',
+								tag6: 'tags[5]',
+								tag7: 'tags[6]'
+							}} />
+						</Wrapper>
+					);
 					const defaultState = createSourceData();
 					const expectedValue = {
 						city3: defaultState.history.places[ 2 ].city,
@@ -749,22 +980,23 @@ describe( 'ReactObservableContext', () => {
 						isActive: true
 					});
 				} );
-				test( 'holds the complete current state object whenever `@@STATE` appears in the renderKeys', async () => {
+				test( 'holds the complete current state object whenever `@@STATE` entry appears in the selectorMap', async () => {
 					/** @type {Store<SourceData>} */
 					let store;
-					const Client = () => {
-						store = useContext( ObservableContext, {
-							city3: 'history.places[2].city',
-							country3: 'history.places[2].country',
-							year3: 'history.places[2].year',
-							isActive: 'isActive',
-							tag6: 'tags[5]',
-							tag7: 'tags[6]',
-							state: '@@STATE'
-						});
-						return null;
-					}
-					render( <Wrapper><Client /></Wrapper> );
+					const onChange = s => { store = s };
+					render(
+						<Wrapper>
+							<Client onChange={ onChange } selectorMap={{
+								city3: 'history.places[2].city',
+								country3: 'history.places[2].country',
+								year3: 'history.places[2].year',
+								isActive: 'isActive',
+								tag6: 'tags[5]',
+								tag7: 'tags[6]',
+								state: '@@STATE'
+							}} />
+						</Wrapper>
+					);
 					const defaultState = createSourceData();
 					const expectedValue = {
 						city3: defaultState.history.places[ 2 ].city,
@@ -800,14 +1032,11 @@ describe( 'ReactObservableContext', () => {
 						state: updatedDataEquiv
 					});
 				} );
-				test( 'holds an empty object when no renderKeys provided', async () => {
+				test( 'holds an empty object when no renderKeys provided ', async () => {
 					/** @type {Store<SourceData>} */
 					let store;
-					const Client = () => {
-						store = useContext( ObservableContext );
-						return null;
-					}
-					render( <Wrapper><Client /></Wrapper> );
+					const onChange = s => { store = s };
+					render( <Wrapper><Client onChange={ onChange } /></Wrapper> );
 					expect( store.data ).toEqual({});
 					store.setState({ // can still update state
 						isActive: true,
@@ -824,12 +1053,118 @@ describe( 'ReactObservableContext', () => {
 					expect( store.data ).toEqual({});
 				} );
 			} );
+			describe( 'store.resetState', () => {
+				describe( 'when selectorMap is present in the consumer', () => {
+					let reactUseEffectSpy, reactUseContextSpy, reactUseStateSpy;
+					let mockConsumer, resetState, selectorMap;
+					beforeAll(() => {
+						selectorMap = { a: 'aggregation', b: 'blatant', c: 'charitable' };
+						mockConsumer = {
+							getState: () => ({}),
+							resetState: jest.fn(),
+							subscribe: () => () => {},
+							unlinkCache: () => {}
+						};
+						reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+						reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([
+							Object.values( selectorMap ).reduce(
+								( o, k ) => { o[ k ] = expect.anything(); return o }, {}
+							),
+							() => {}
+						]);
+						reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+						const { result } = renderUseContextHook({ context: expect.anything(), selectorMap });
+						resetState = result.current.resetState;
+					});
+					afterAll(() => {
+						reactUseContextSpy.mockRestore();
+						reactUseEffectSpy.mockRestore();
+						reactUseStateSpy.mockRestore();
+					} );
+					describe( 'and called with own state property paths to reset', () => {
+						test( 'calculates setstate changes using state slice matching the supplied property paths', () => {
+							const args = [ 'blatant', 'xylophone', 'yodellers', 'zenith' ];
+							resetState( args );
+							expect( mockConsumer.resetState ).toHaveBeenCalledWith( args );
+						} );
+					} );
+					describe( 'and called with NO state property paths to reset', () => {
+						test( 'calculates setstate changes using state slice matching property paths derived from the selectorMap', () => {
+							resetState();
+							expect( mockConsumer.resetState ).toHaveBeenCalledWith( Object.values( selectorMap ) )
+						} );
+					} );
+				} );
+				describe( 'when selectorMap is NOT present in the consumer', () => {
+					let reactUseEffectSpy, reactUseContextSpy, reactUseStateSpy;
+					let mockConsumer, resetState;
+					beforeAll(() => {
+						mockConsumer = {
+							getState: () => ({}),
+							resetState: jest.fn(),
+							subscribe: () => () => {},
+							unlinkCache: () => {}
+						};
+						reactUseEffectSpy = jest.spyOn( React, 'useEffect' );
+						reactUseStateSpy = jest.spyOn( React, 'useState' ).mockReturnValue([ {}, () => {} ]);
+						reactUseContextSpy = jest.spyOn( React, 'useContext' ).mockReturnValue( mockConsumer );
+						const { result } = renderUseContextHook({ context: expect.anything() });
+						resetState = result.current.resetState;
+					});
+					afterAll(() => {
+						reactUseContextSpy.mockRestore();
+						reactUseEffectSpy.mockRestore();
+						reactUseStateSpy.mockRestore();
+					} );
+					describe( 'and called with own state property paths to reset', () => {
+						test( 'calculates setstate changes using state slice matching the supplied property paths', () => {
+							const args = [ 'blatant', 'xylophone', 'yodellers', 'zenith' ];
+							resetState( args );
+							expect( mockConsumer.resetState ).toHaveBeenCalledWith( args );
+						} );
+					} );
+					describe( 'and called with NO state property paths to reset', () => {
+						test( 'calculates setstate changes using no property paths -- the consumer applies no store reset [see usestore(...)]', () => {
+							resetState();
+							expect( mockConsumer.resetState ).toHaveBeenCalledWith([]);
+						} );
+					} );
+				} );
+			} );
 		} );
 	} );
 } );
 
+/**
+ * @typedef {{
+ *	getState: (...args: any[]) => any|jest.Mock<any, any>,
+ *	resetState: (...args: any[]) => any|jest.Mock<any, any>,
+ *	subscribe: (...args: any[]) => any|jest.Mock<any, any>,
+ *	unlinkCache: (...args: any[]) => any|jest.Mock<any, any>
+ * }} ContextConsumerMock
+ */
+/**
+ * @typedef {{
+ *	context: ObservableContext<State>,
+ * 	selectorMap: {[propertyPath: string]:*}
+ * }} RenderUseContextProps
+ */
+/**
+ * @typedef {import(".").ObservableContext<T>} ObservableContext
+ * @template {State} T
+ */
 /** @typedef {import("../test-artifacts/data/create-state-obj").SourceData} SourceData */
 /**
  * @typedef {import("../types").Store<T>} Store
  * @template {import("../types").State} T
+ */
+/**
+ * @typedef {import('@testing-library/react-hooks').Renderer<TProps>} Renderer
+ * @template TProps
+ */
+/**
+ * 	@typedef {import('@testing-library/react-hooks').RenderHookResult<TProps, TValue, TRenderer>} RenderHookResult
+ *	@template TProps
+ *	@template TValue
+ *	@template {Renderer<TProps>} TRenderer
  */

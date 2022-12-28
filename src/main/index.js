@@ -4,11 +4,8 @@ import React, {
 	createContext as _createContext,
 	memo,
 	useCallback,
-	useContext as _useContext,
-	useEffect,
 	useMemo,
-	useRef,
-	useState
+	useRef
 } from 'react';
 
 import isEmpty from 'lodash.isempty';
@@ -156,9 +153,9 @@ export const useContext = ( context, selectorMap = {} ) => {
 		subscribe,
 		unlinkCache,
 		...store
-	} = _useContext( context );
+	} = React.useContext( context );
 
-	const [ clientId ] = useState( uuid );
+	const [ clientId ] = React.useState( uuid );
 
 	const _renderKeys = useRenderKeyProvider( selectorMap );
 
@@ -173,7 +170,7 @@ export const useContext = ( context, selectorMap = {} ) => {
 	}, [ _renderKeys ]);
 
 	/** @type {[Data, Function]} */
-	const [ data, setData ] = useState(() => {
+	const [ data, setData ] = React.useState(() => {
 		const data = {};
 		if( isEmpty( _renderKeys ) ) { return data }
 		const state = _getState( clientId, ..._renderKeys );
@@ -197,11 +194,11 @@ export const useContext = ( context, selectorMap = {} ) => {
 
 	/**
 	 * @type {Store<T>["resetState"]}
-	 * @template {State} T
+	 * @template {Stat} T
 	 */
 	const resetState = useCallback(( propertyPath = _renderKeys ) => _resetState( propertyPath ), [ _renderKeys ]);
 
-	useEffect(() => { // sync data states with new renderKeys
+	React.useEffect(() => { // sync data states with new renderKeys
 		if( isEmpty( _renderKeys ) ) {
 			!isEqual( {}, data ) && setData( {} );
 			return;
