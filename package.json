@@ -111,5 +111,5 @@
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/main/index.d.ts",
-  "version": "4.0.0-alpha.4"
+  "version": "4.0.0-alpha.5s"
 }

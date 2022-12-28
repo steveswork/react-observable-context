@@ -194,7 +194,7 @@ export const useContext = ( context, selectorMap = {} ) => {
 
 	/**
 	 * @type {Store<T>["resetState"]}
-	 * @template {Stat} T
+	 * @template {State} T
 	 */
 	const resetState = useCallback(( propertyPath = _renderKeys ) => _resetState( propertyPath ), [ _renderKeys ]);
 
