@@ -60,20 +60,14 @@ A client is any component consuming the observable context. A client consumes th
  <ol>
 	<li>
 		<p style="margin: 0 0 5px 10px">
-			<b>resetState:</b>
-			<code style="margin: 10px 5px">
-				(resetData: PartialState&lt;State&gt;, state: {current: State, original: State}) => boolean;
-			</code>
-			// <b><i><code>resetData</code></i></b> holds the <code>nextUpdate</code> values.
+			<b>resetState:</b> 
+			<code style="margin: 10px 5px">(resetData: PartialState&lt;State&gt;, state: {current: State, original: State}) => boolean;</code> // <b><i><code>resetData</code></i></b> holds the <code>nextUpdate</code> values.
 		</p>
 	</li>
 	<li>
 		<p style="margin: 0 0 5px 10px">
-			<b>setState:</b>
-			<code style="margin: 10px 5px">
-				(newChanges: PartialState&lt;State&gt;) => boolean;
-			</code>
-			// <b><i><code>newChanges</code></i></b> holds the <code>nextUpdate</code> values.
+			<b>setState:</b> 
+			<code style="margin: 10px 5px">(newChanges: PartialState&lt;State&gt;) => boolean;</code> // <b><i><code>newChanges</code></i></b> holds the <code>nextUpdate</code> values.
 		</p>
 	</li>
  </ol>
@@ -147,11 +141,7 @@ The `React.Observable.Context` context allows for a user-defined Storage object 
 
 A valid storage object is of the type: `IStorage<State>` implementing the following **4** methods:
 <ol>
-	<li>
-		<code style="margin-left: 10px">
-			clone: (data: State) => State; // expects a state clone
-		</code>
-	</li>
+	<li><code style="margin-left: 10px">clone: (data: State) => State; // expects a state clone</code></li>
 	<li><code style="margin-left: 10px">getItem: (key: string) => State;</code></li>
 	<li><code style="margin-left: 10px">removeItem: (key: string) => void;</code></li>
 	<li><code style="margin-left: 10px">setItem: (key: string, data: State) => void;</code></li>
@@ -162,7 +152,7 @@ The `React.Observable.Context` context `store` is the client's facade to the con
 <ol>
 	<li>
 		<p style="margin: 0 0 0 10px">
-			<b>data:</b>
+			<b>data:</b> 
 			<span style="margin-left: 5px">
 				which is an object holding resolved state slices as declared in the selector map. <a href="#selector-map-example">See selector map to store data example here</a>
 			</span>
@@ -170,18 +160,14 @@ The `React.Observable.Context` context `store` is the client's facade to the con
 	</li>
 	<li>
 		<p style="margin: 0 0 0 10px">
-			<a href="#store-resetstate"><b>resetState:</b></a>
-			<code style="margin-left: 5px">
-				(propertyPaths?: Array<string>) => void // resets slices of state referenced by the property paths to their initial values.`
-			</code>
+			<a href="#store-resetstate"><b>resetState:</b></a> 
+			<code style="margin-left: 5px">(propertyPaths?: Array<string>) => void // resets slices of state referenced by the property paths to their initial values.</code>
 		</p>
 	</li>
 	<li>
 		<p style="margin: 0 0 0 10px">
-			<a href="#store-setstate"><b>setState:</b></a>
-			<code style="margin-left: 5px">
-				(changes: PartialState<State>) => void // merges only new/changed state slices.
-			</code>
+			<a href="#store-setstate"><b>setState:</b></a> 
+			<code style="margin-left: 5px">(changes: PartialState<State>) => void // merges only new/changed state slices.</code>
 		</p>
 	</li>
 </ol>
