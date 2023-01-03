@@ -212,7 +212,7 @@ The React-Observable-Context module contains **4** exports namely:
 	<li style="padding-bottom: 5px">
 		<p style="margin: 0 0 5px 5px">
 			<b id="connect">connect</b>
-			<p style="padding-left: 5px; margin-top: -5px">
+			<p style="margin: -5px 0 0 5px">
 				<span style="margin: 5px 10px 0 0">-</span>is a function taking a <code>React-Observable-Context</code> context object and an optional <a href="#selector-map">selector map</a> parameters; and returning a reusable connector function.<br />
 				<span style="margin: 5px 10px 0 0">-</span>The connector function takes a client as a parameter and returns an HOC.<br />
 				<span style="margin: 5px 10px 0 0">-</span>Any client using similar context object and selector map may be passed to this connector.<br />
@@ -236,7 +236,7 @@ The React-Observable-Context module contains **4** exports namely:
 	<li>
 		<p style="margin: 0 0 5px 5px">
 			<b id="usecontext">useContext</b>
-			<p style="padding-left: 5px; margin-top: -5px">
+			<p style="margin: -5px 0 0 5px">
 				<span style="margin: 5px 10px 0 0">-</span>is a hook taking a <code>React-Observable-Context</code> context object and an optional <a href="#selector-map">selector map</a> parameters; and returning the context <a href="#store">store</a>.<br />
 				<span style="margin: 5px 10px 0 0">-</span>The injected <a href="#store">store</a> monitors changes in the underlying state slices referenced by the selector map.<br />
 				<span style="margin: 5px 10px 0 0">-</span>A change in any of the referenced state slices automatically triggers an update of the related <code>store.data</code> property and a subsequent render of the client.<br />
