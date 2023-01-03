@@ -255,12 +255,40 @@ describe( 'useStore', () => {
 					store.resetState();
 					expect( setStateSpy ).not.toHaveBeenCalled();
 				} );
+				test( 'throws if return type is not boolean', () => {
+					const { result } = renderHook(
+						({ prehooks: p, storage: s, value: v }) => useStore( p, v, s ),
+						{
+							initialProps: {
+								prehooks: { resetState: () => {}, setState: () => true },
+								storage,
+								value: initialState
+							}
+						}
+					);
+					expect(() => result.current.resetState( expect.anything() ))
+						.toThrow( '`resetState` prehook must return a boolean value.' );
+				} );
 			} );
 			describe( 'setState #2', () => {
 				test( 'will not set the state if prehook evaluates to false', () => {
 					// prehooks.setState had been mocked to return false
 					store.setState();
 					expect( setStateSpy ).not.toHaveBeenCalled();
+				} );
+				test( 'throws if return type is not boolean', () => {
+					const { result } = renderHook(
+						({ prehooks: p, storage: s, value: v }) => useStore( p, v, s ),
+						{
+							initialProps: {
+								prehooks: { resetState: () => true, setState: () => {} },
+								storage,
+								value: initialState
+							}
+						}
+					);
+					expect(() => result.current.setState( expect.anything() ))
+						.toThrow( '`setState` prehook must return a boolean value.' );
 				} );
 			} );
 		} );

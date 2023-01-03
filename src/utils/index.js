@@ -1,7 +1,6 @@
 import get from 'lodash.get';
 import has from 'lodash.has';
 import isPlainObject from 'lodash.isplainobject';
-import set from 'lodash.set';
 
 class None {};
 export const none = new None();
@@ -71,7 +70,7 @@ export function makeReadonly( v ) {
 };
 
 /**
- * Pulls propertyPath values from state and compiles them into a partial state object
+ *  Pulls propertyPath values from state and compiles them into a partial state object
  *
  * @param {T} source
  * @param {Array<string>} propertyPaths
@@ -79,52 +78,27 @@ export function makeReadonly( v ) {
  * @template {{[x: string]:*}} T
  */
 export function mapPathsToObject( source, propertyPaths ) {
-	const object = {};
-	for( const path of arrangePropertyPaths( propertyPaths ) ) {
+	const paths = [];
+	for( const path of propertyPaths ) {
+		paths.push( path.replace( /\.?\[/g, '.' ).replace( /^\.|\]/g, '' ) );
+	}
+	const dest = {};
+	let object = dest;
+	for( const path of arrangePropertyPaths( paths ) ) {
+		if( !has( source, path ) ) { continue }
 		const value = get( source, path );
-		if( typeof value === 'undefined' && !has( source, path ) ) { continue }
-		let parent = object;
 		for( let tokens = path.split( '.' ), tLen = tokens.length, t = 0; t < tLen; t++ ) {
-			if( !tokens[ t ].endsWith( ']' ) ) {
-				if( t + 1 === tLen ) {
-					parent[ tokens[ t ] ] = value;
-				} else if( !( tokens[ t ] in parent ) ) {
-					parent[ tokens[ t ] ] = {};
-				}
-				parent = parent[ tokens[ t ] ];
-				continue;
+			const token = tokens[ t ];
+			if( t + 1 === tLen ) {
+				object[ token ] = value;
+				object = dest;
+				break;
 			}
-			const arrayMatch = tokens[ t ].match( /^([^\[]+)((?:\[[0-9]+\])+)$/ );
-			const indexMatches = arrayMatch[ 2 ]
-				.replace( /^\[/, '' )
-				.replace( /\]$/, '' )
-				.split( '][' );
-			const exArray = arrayMatch[ 1 ] in parent ? parent[ arrayMatch[ 1 ] ] : none;
-			parent[ arrayMatch[ 1 ] ] = new Array( +indexMatches[ 0 ] );
-			parent = parent[ arrayMatch[ 1 ] ];
-			const currArray = parent;
-			for( let iLen = indexMatches.length, i = 0; i < iLen; i++ ) {
-				const stateIndex = +indexMatches[ i ];
-				parent[ stateIndex ] = i + 1 === iLen ? value : new Array( +indexMatches[ i + 1 ] );
-				parent = parent[ stateIndex ];
+			if( !( token in object ) ) {
+				object[ token ] = {};
 			}
-			if( exArray instanceof None ) { continue }
-			( function mergeIndexedObj( source, parentPropertyPath = '' ) {
-				if( isPlainObject( source ) ) {
-					for( const k in source ) {
-						mergeIndexedObj( source[ k ], `${ parentPropertyPath }${ k }.` );
-					}
-					return;
-				}
-				if( Array.isArray( source ) ) {
-					for( let sLen = source.length, s = 0; s < sLen; s++ ) {
-						mergeIndexedObj( source[ s ], `${ parentPropertyPath }${ s }.` );
-					}
-					return;
-				}
-				set( currArray, parentPropertyPath.replace( /\.+$/, '' ), source );
-			} )( exArray );
+			object = object[ token ];
 		}
 	}
-	return object;
-};
+	return dest;
+}

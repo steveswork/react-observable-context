@@ -66,9 +66,9 @@ class Accessor {
 		}
 		let refreshLen;
 		const refreshPaths = {};
-		buildRefreshObj: {
+		BUILD_REFRESH_OBJ: {
 			const pathSet = new Set( this.outdatedPaths );
-			this.outdatedPaths.length = 0;
+			this.outdatedPaths = [];
 			refreshLen = pathSet.size;
 			for( const p of pathSet ) { refreshPaths[ p ] = true }
 		}

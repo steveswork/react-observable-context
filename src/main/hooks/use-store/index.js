@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import clonedeep from 'lodash.clonedeep';
+import isBoolean from 'lodash.isboolean';
 
 import { v4 } from 'uuid';
 
@@ -20,6 +21,24 @@ export const deps = {
 	setState: _setState,
 	uuid: v4
 };
+
+/**
+ *
+ * @param {Prehooks<T>} prehooks
+ * @param {N} name
+ * @param {N extends "setState" ? [PartialState<T>] : N extends "resetState" ? [PartialState<T>, {current:T, original:T}] : never } args
+ * @returns {boolean}
+ * @template {State} T
+ * @template {keyof Prehooks<T>} N
+ */
+function runPrehook( prehooks, name, args ) {
+	if( !( name in prehooks ) ) { return true }
+	const res = prehooks[ name ]( ...args );
+	if( !isBoolean( res ) ) {
+		throw new TypeError( `\`${ name }\` prehook must return a boolean value.` );
+	}
+	return res;
+}
 
 /**
  * @param {Prehooks<T>} prehooks
@@ -66,19 +85,16 @@ const useStore = ( prehooks, value, storage ) => {
 			: propertyPaths.includes( FULL_STATE_SELECTOR )
 				? original
 				: mapPathsToObject( original, propertyPaths );
-		( !( 'resetState' in prehooksRef.current ) ||
-			prehooksRef.current.resetState( resetData, {
-				current: clonedeep( state ), original
-			} )
-		) && deps.setState( state, resetData, onChange )
+		runPrehook( prehooksRef.current, 'resetState', [
+			resetData, { current: clonedeep( state ), original }
+		]) && deps.setState( state, resetData, onChange );
 	}, []);
 
 	/** @type {StoreInternal<T>["setState"]} */
 	const setState = useCallback( changes => {
 		changes = clonedeep( changes );
-		( !( 'setState' in prehooksRef.current ) ||
-			prehooksRef.current.setState( changes )
-		) && deps.setState( state, changes, onChange );
+		runPrehook( prehooksRef.current, 'setState', [ changes ]) &&
+		deps.setState( state, changes, onChange );
 	}, [] );
 
 	/** @type {StoreInternal<T>["subscribe"]} */

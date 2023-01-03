@@ -128,25 +128,18 @@ describe( 'utils module', () => {
 		});
 		test( 'returns a subset of the source pbject matching arranged property paths', () => {
 			expect( utils.mapPathsToObject( source, propertyPaths ) ).toEqual({
-				address: '760 Midwood Street, Harborton, Massachusetts, 7547',
-				friends: [ undefined, source.friends[ 1 ] ],
-				history: {
-					places: {
-						0: {
-							city: source.history.places[ 0 ].city
-						}
-					}
+				address: source.address,
+				friends: { 1: source.friends[ 1 ] },
+				history: { places: { 0: { city: source.history.places[ 0 ].city } } },
+				matrix: {
+					0: { 1: source.matrix[ 0 ][ 1 ], 2: source.matrix[ 0 ][ 2 ] },
+					2: { 2: source.matrix[ 2 ][ 2 ] }
 				},
-				matrix: [
-					[ undefined, source.matrix[ 0 ][ 1 ], source.matrix[ 0 ][ 2 ] ],
-					undefined,
-					[ undefined, undefined, source.matrix[ 2 ][ 2 ] ]
-				],
 				registered: {
 					time: source.registered.time,
 					timezone: source.registered.timezone
 				},
-				tags: [ undefined, undefined, undefined, undefined, source.tags[ 4 ] ]
+				tags: { 4: source.tags[ 4 ] }
 			});
 		} );
 		test(
@@ -160,5 +153,26 @@ describe( 'utils module', () => {
 				}
 			})
 		);
+		test( 'returns a subset of the source object excluding non-existent property paths', () => {
+			expect( utils.mapPathsToObject( source, [ 'matrix.0.1', 'matrix.0.44' ] ) ).toEqual({
+				matrix: { 0: { 1: source.matrix[ 0 ][ 1 ] } }
+			});
+		});
+		test( 'handles multi-dimensional arrays', () => {
+			source = require( '../test-artifacts/data/create-state-obj' ).default();
+			source.matrix = [
+				[ [ 0, 3, 1 ], [ 4, 0, 3 ] ],
+				[ [ 4, 1, 9 ], [ 7, 4, 9 ] ],
+				[ [ 8, 7, 3 ], [ 0, 3, 1 ] ]
+			];
+			const matrix11 = { 1: source.matrix[ 1 ][ 1 ] };
+			const matrix20 = { 0: source.matrix[ 2 ][ 0 ] };
+			expect( utils.mapPathsToObject( source, [ 'matrix.1.1', 'matrix[2].0' ] ) )
+				.toEqual({ matrix: { 1: matrix11, 2: matrix20 } });
+			expect( utils.mapPathsToObject( source, [ 'matrix[2].0', 'matrix.1.1' ] ) )
+				.toEqual({ matrix: { 1: matrix11, 2: matrix20 } });
+			expect( utils.mapPathsToObject( source, [ 'matrix.1.1' ] ) ).toEqual({ matrix: { 1: matrix11 }	});
+			expect( utils.mapPathsToObject( source, [ 'matrix[2].0' ] ) ).toEqual({	matrix: { 2: matrix20 }	});
+		} );
 	} );
 } );

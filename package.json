@@ -1,15 +1,16 @@
 {
   "author": "Stephen Isienyi <stephen.isienyi@webkrafting.com>",
   "bugs": {
-    "url": "https://github.com/steveswork/react-observable-context/issues"
+    "url": "https://github.com/webKrafters/react-observable-context/issues"
   },
   "contributors": [
-    "steveswork <stephen.isienyi@webkrafting.com> (https://github.com/steveswork)"
+    "steveswork <stephen.isienyi@gmail.com> (https://github.com/steveswork)"
   ],
   "dependencies": {
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
     "lodash.has": "^4.5.2",
+    "lodash.isboolean": "^3.0.3",
     "lodash.isempty": "^4.4.0",
     "lodash.isequal": "^4.5.0",
     "lodash.isplainobject": "^4.0.6",
@@ -76,8 +77,16 @@
     "dist/constants.js",
     "dist/constants.d.ts"
   ],
-  "homepage": "https://github.com/steveswork/react-observable-context#readme",
+  "homepage": "https://github.com/webKrafters/react-observable-context#readme",
   "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "src/test-artifacts",
+      "src/main/test-apps",
+      "src/types"
+    ],
     "transform": {
       "\\.[jt]sx?$": "babel-jest"
     }
@@ -102,14 +111,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/steveswork/react-observable-context.git"
+    "url": "git+https://github.com/webKrafters/react-observable-context.git"
   },
   "scripts": {
     "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc",
     "postbuild": "node ./post-builder",
-    "test": "eslint --fix && jest --updateSnapshot",
+    "test": "eslint --fix && jest --coverage --updateSnapshot",
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/main/index.d.ts",
-  "version": "4.0.0-alpha.5s"
+  "version": "4.0.0-alpha.5"
 }
