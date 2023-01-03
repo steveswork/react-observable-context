@@ -15,7 +15,6 @@
     "lodash.isequal": "^4.5.0",
     "lodash.isplainobject": "^4.0.6",
     "lodash.omit": "^4.5.0",
-    "lodash.set": "^4.3.2",
     "uuid": "^9.0.0"
   },
   "description": "Observable react context - prevents an automatic total component tree tear-down and re-rendering during context updates.",
