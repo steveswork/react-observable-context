@@ -1,8 +1,9 @@
-node_modules
 .DS_Store
 .history
 .vscode
-report.*.json
-npm-debug.log*
-dist
+coverage
 debug.log
+dist
+node_modules
+npm-debug.log*
+report.*.json
