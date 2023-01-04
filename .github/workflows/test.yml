@@ -16,7 +16,6 @@ jobs:
         node-version: [ 12.x, 14.x, 15.x ]
 
     steps:
-    
       - uses: actions/checkout@v3
 
       - name: Use Node.js ${{ matrix.node-version }}
@@ -24,10 +23,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       
-      - run: |
-          npm ci
-          npm install
-          npm run test:core -- --coverage
+      - run: npm ci
+      - run: npm install
+      - run: npm run test:core -- --coverage
 
       - uses: coverallsapp/github-action@master
         with:
