@@ -1,4 +1,7 @@
 <p align="center">
+	<a href="https://typescriptlang.org">
+		<img alt="TypeScript" src="https://badgen.net/badge/icon/typescript?icon=typescript&label">
+	</a>
 	<a href="#">
 		<img alt="GitHub pull request check contexts" src="https://img.shields.io/github/status/contexts/pulls/webKrafters/react-observable-context/0">
 	</a>
