@@ -1,6 +1,3 @@
-﻿<p align="center">
-	<img alt="Eagle Eye" height="320px" src="eagle-eye.png" width="640px" />
-</p>
 <p align="center">
 	<a href="#">
 		<img alt="GitHub pull request check contexts" src="https://img.shields.io/github/status/contexts/pulls/webKrafters/react-observable-context/0">
@@ -16,11 +13,17 @@
 	<img alt="npm bundle size (scoped)" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/react-observable-context">
 	<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/webKrafters/react-observable-context">
 </p>
-<br /><br />
+﻿<p align="center">
+	<img alt="Eagle Eye" height="320px" src="eagle-eye.png" width="640px" />
+</p>
+
+<br />
+
+<br />
+
 <p>This version is currently under test. Please continue to use our latest stable release at: 3.0.0.</p>
 <p>npm install --save @webkrafters/react-observable-context@3.0.0</p>
 <p>Thank you!</p>
-<br />
 
 <br />
 
