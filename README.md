@@ -1,23 +1,20 @@
 <p align="center">
+	<img alt="Eagle Eye" height="150px" src="eagle-eye.png" width="250px" />
+</p>
+<p align="center">
 	<a href="https://typescriptlang.org">
 		<img alt="TypeScript" src="https://badgen.net/badge/icon/typescript?icon=typescript&label">
 	</a>
-	<a href="#">
-		<img alt="GitHub pull request check contexts" src="https://img.shields.io/github/status/contexts/pulls/webKrafters/react-observable-context/0">
-	</a>
-	<a href="#">
-		<img alt="GitHub Workflow Status (with branch)" src="https://img.shields.io/github/actions/workflow/status/webKrafters/react-observable-context/test.yml?branch=main">
+	<a href="https://github.com/webKrafters/react-observable-context/actions">
+		<img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/webKrafters/react-observable-context/test.yml">
 	</a>
 	<a href="https://coveralls.io/github/webKrafters/react-observable-context">
 		<img alt="coverage" src="https://img.shields.io/coveralls/github/webKrafters/react-observable-context">
 	</a>
-	<img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2032">
 	<img alt="NPM" src="https://img.shields.io/npm/l/@webkrafters/react-observable-context">
+	<img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2032">
 	<img alt="npm bundle size (scoped)" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/react-observable-context">
 	<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/webKrafters/react-observable-context">
-</p>
-﻿<p align="center">
-	<img alt="Eagle Eye" height="320px" src="eagle-eye.png" width="640px" />
 </p>
 
 <br />
