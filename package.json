@@ -116,8 +116,9 @@
     "build": "eslint --fix && rm -rf dist && babel src -d dist && npx -p typescript tsc",
     "postbuild": "node ./post-builder",
     "test": "eslint --fix && jest --coverage --updateSnapshot",
+    "test:core": "jest --updateSnapshot",
     "test:watch": "eslint --fix && jest --updateSnapshot --watchAll"
   },
   "types": "dist/main/index.d.ts",
-  "version": "4.0.0-alpha.6s"
+  "version": "4.0.0-alpha.6"
 }
