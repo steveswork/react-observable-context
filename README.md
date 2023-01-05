@@ -35,7 +35,7 @@ Subscribing component decides which context state properties' changes to trigger
 npm i -S @webkrafters/react-observable-context\
 npm install --save @webkrafters/react-observable-context
 
-May also see [**What's Changed?**](#changes) section below.
+May also see <b><a href="#changes">What's Changed?</a></b> section below.
 
 # Intro
 
