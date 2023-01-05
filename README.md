@@ -29,7 +29,8 @@ Subscribing component decides which context state properties' changes to trigger
 
 **Usage:** Please see [Usage](#usage) section
 
-**Demo:** [Play with the app on codesandbox](https://codesandbox.io/s/github/webKrafters/react-observable-context-app)
+**Demo:** [Play with the app on codesandbox](https://codesandbox.io/s/github/webKrafters/react-observable-context-app)\
+If sandbox fails to load app, please refresh dependencies on its lower left.
 
 **Install:**\
 npm i -S @webkrafters/react-observable-context\
@@ -89,15 +90,18 @@ The property path `a.c.e` accesses the `e=5` property.<br />
 Either of the property paths `a.c.f.1` and `a.c.f[1]`  accesses the `[1]=2` property.<br />
 A special property path [@@STATE](#fullstate-selectorkey) may be used to access the full given object.<br />
 
-<strong id="fullstate-selectorkey"><u>@@STATE</u></strong> is a special property path to access the full state object as a single slice. ***Caution:***  When this property path exists in a selector map, any change in the state object results in an update of its `store.data` and a subsequent render of its client(s).
+<strong id="fullstate-selectorkey"><u>@@STATE</u></strong> is a special property path to access the full state object as a single slice.<br />
+***Caution:***  When this property path exists in a <a href="#selector-map">selector map</a>, any change in the state object results in an update of its <a href="#store"><code>store.data</code></a> and a subsequent render of its client(s).
 
 ## Provider
 The Provider component is a property of the `React-Observable-Context` context object. As a `React.context` based provider, it accepts the customary `children` and `value` props. It also accepts **2** optional props: <a href="#prehooks"><code>prehooks</code></a> and <a href="#storage"><code>storage</code></a>.
 
+Routinely, the `value` prop is initialized with the full initial state. It may only be updated with parts of the state which are changing. Please see a [Provider Usage](#provider-usage) sample below. 
+
 <h2 id="selector-map">Selector Map</h2>
 A selector map is an object holding key:value pairs.<br />
-<span style="margin-right: 10px">-</span><code>key</code> refers to an arbitrary name to be assigned to a given property in the <code>store.data</code>.<br />
-<span style="margin-right: 10px">-</span><code>value</code> refers to the <a href="#property-path">property path</a> leading to a state slice whose value will be assigned to and observed by this <code>store.data</code> property.<br />
+<span style="margin-right: 10px">-</span><code>key</code> refers to an arbitrary name to be assigned to a given property in the <a href="#store"><code>store.data</code></a>.<br />
+<span style="margin-right: 10px">-</span><code>value</code> refers to the <a href="#property-path">property path</a> leading to a state slice whose value will be assigned to and observed by this <a href="#store"><code>store.data</code></a> property.<br />
 <span style="margin-right: 10px">-</span>A special '<a href="#fullstate-selectorkey">@@STATE</a>' value may be used to access and observe the full state object.<br />
 
 <strong id="selector-map-example">Example:</strong>
@@ -132,7 +136,7 @@ store.data = {
 ```
 
 ## Storage
-The `React.Observable.Context` context allows for a user-defined Storage object to maintain the integrity of the initial context state at a location of the user's choosing. This, it accepts, via its Provider's `storage` optional prop. The context defaults to the `window.sessionstorage` in supporting environments. Otherwise, it defaults to its own internal memory-based storage.
+The `React.Observable.Context` context allows for a user-defined Storage object to be provided for maintaining the integrity of the initial context state at a location of the user's choosing. This, it accepts, via its Provider's `storage` optional prop. The context defaults to `window.sessionstorage` in supporting environments. Otherwise, it defaults to its own internal memory-based storage.
 
 A valid storage object is of the type: `IStorage<State>` implementing the following **4** methods:
 <ol>
@@ -143,7 +147,7 @@ A valid storage object is of the type: `IStorage<State>` implementing the follow
 </ol>
 
 ## Store
-The `React.Observable.Context` context `store` is the client's facade to the context's underlying state. It exposes **3** properties namely:
+The `React.Observable.Context` context `store` is the client's portal into the context's underlying state. It exposes **3** properties namely:
 <ol>
 	<li>
 		<p style="margin: 0 0 0 10px">
@@ -245,28 +249,26 @@ The React-Observable-Context module contains **4** exports namely:
 
 # Usage
 
-### <u>*context.js*</u>
-
-    import { connect, createContext, useContext } from '@webkrafters/react-observable-context';
-	const ObservableContext = createContext();
-	export const connectObservableContext = selectorMap => connect( ObservablContext, selectorMap );
-	export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
-	export default ObservableContext;
-
-### <u>*ui.js*</u> 
+<i><b><u>context.js</u></b></i>
 ```
-/********************************************/
-/*  ui.js: using the `connect` HOC method.  */
-/********************************************/
+import { connect, createContext, useContext } from '@webkrafters/react-observable-context';
 
+const ObservableContext = createContext();
+
+export const connectObservableContext = selectorMap => connect( ObservablContext, selectorMap );
+
+export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
+
+export default ObservableContext;
+```
+
+<i><b><u>ui.js</u></b> (connect method)</i>
+```
 import React, { useCallback, useEffect } from 'react';
 import ObservableContext, { connnectObservableContext } from './context';
 
-const withConnector = connectObservableContext({ year: 'a.b.x.y.z[0]' });
-
-const Client1 = withConnector(({ data }) => ( <div>Year: { data.year }</div> ));
-
-const Client2 = withConnector(({ data, setState, resetState }) => {
+export const YearText = ({ data }) => ( <div>Year: { data.year }</div> );
+export const YearInput = ({ data, setState, resetState }) => {
 	const onChange = useCallback( e => setState({
 		a: { b: { x: { y: { z: { 0: e.target.value } } } } }
 	}), [ setState ]);
@@ -274,7 +276,11 @@ const Client2 = withConnector(({ data, setState, resetState }) => {
 		data.year > 2049 && resetState([ 'a.b.c' ]);
 	}, [ data.year ]);
 	return ( <div>Year: <input type="number" onChange={ onChange } /> );
-});
+};
+
+const withConnector = connectObservableContext({ year: 'a.b.x.y.z[0]' });
+const Client1 = withConnector( YearText );
+const Client2 = withConnector( YearInput );
 
 const Ui = () => (
 	<div>
@@ -285,11 +291,9 @@ const Ui = () => (
 
 export default Ui;
 ```
-```
-/************************************************/
-/*  ui.js: using the `useContext` hook method.  */
-/************************************************/
 
+<i><b><u>ui.js</u></b> (useContext with memo method)</i>
+```
 import React, { memo, useCallback, useEffect } from 'react';
 import ObservableContext, { useObservableContext } from './context';
 
@@ -321,51 +325,67 @@ const Ui = () => (
 export default Ui;
 ```
 
-### <u>*provider.js*</u>
+<i id="provider-usage"><b><u>provider.js</u></b></i>
+```
+import React, { useCallback, useMemo, useState } from 'react';
+import ObservableContext from './context';
+import Ui from './ui';
 
-    import React, { useCallback, useState } from 'react';
-	import ObservableContext from './context';
-	import Ui from './ui';
+const initialState = { a: { b: { c: 25, x: { y: { z: [ 2022 ] } } } } };
 
-	const initialState = { a: { b: { c: 25, x: { y: { z: [ 2022 ] } } } } };
+const createStorageStub = data => ({
+	clone( data ) { return <your clone function>( data ) }, 
+	data,
+	getItem( key ) { return this.data },
+	removeItem( key ) {},
+	setItem( key, data ) {} 
+});
+
+const updateHooks = {
+	resetState: ( ...args ) => {
+		console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
+		return true;
+	},
+	setState: ( ...args ) => {
+		console.log( 'merging following into state >>>> ', JSON.stringify( args ) );
+		return true;
+	}
+};
+
+const Provider = ({ c = initialState.c }) => {
 	
-	const storage = {
-		clone: data => ({ ...data }),
-		getItem: key => initialState,
-		removeItem ( key ) {},
-		setItem ( key, data ) {} 
-	};
+	const storage = useMemo(() => createStorageStub({ ...initialsState, c }), []);
 	
-	const updateHooks = {
-		resetState: ( ...args ) => {
-			console.log( 'resetting state with >>>> ', JSON.stringify( args ) );
-			return true;
-		},
-		setState: ( ...args ) => {
-			console.log( 'merging following into state >>>> ', JSON.stringify( args ) );
-			return true;
-		}
-	};
+	const [ state, setState ] = useState(() => storage.getItem());
 	
-	const Provider = () => (
+	useEffect(() => {
+		setState({ c }); // use this (similar to `store.setState`) to update only the changed slice of the context internal state.
+		// Do not do this: `setState({ ...state, c });` // it will override the context internal state.
+	}, [ c ]);
+	
+	return (
 		<ObservableContext.Provider
 			prehooks={ updateHooks }
 			storage={ storage }
-			value={ initialState }
+			value={ state }
 		>
 			<Client />
 		</ObservableContext.Provider>
 	);
-	Provider.displayName = 'Provider';
-	
-	export default Provider;
+};
+Provider.displayName = 'Provider';
 
-### <u>*index.js*</u>
+export default Provider;
+```
 
-    import React from 'react';
-    import ReactDOM from 'react-dom';
-    import Provider from './provider';
-    ReactDOM.render(<Provider />, document.getElementById('root'));
+<i><b><u>index.js</u></b></i>
+```
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Provider from './provider';
+
+ReactDOM.render( <Provider />, document.getElementById( 'root' ) );
+```
 
 <h1 id="changes">What's Changed?</h1>
 <table>
