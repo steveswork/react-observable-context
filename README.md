@@ -17,16 +17,6 @@
 	<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/webKrafters/react-observable-context">
 </p>
 
-<br />
-
-<br />
-
-<p>This version is currently under test. Please continue to use our latest stable release at: 3.0.0.</p>
-<p>npm install --save @webkrafters/react-observable-context@3.0.0</p>
-<p>Thank you!</p>
-
-<br />
-
 # React-Observable-Context [Eagle Eye]
 
 A context bearing an observable consumer [store](#store).\
@@ -38,6 +28,8 @@ Subscribing component decides which context state properties' changes to trigger
 **Moniker:** Eagle Eye
 
 **Usage:** Please see [Usage](#usage) section
+
+**Demo:** [Play with the app on codesandbox](https://codesandbox.io/s/github/webKrafters/react-observable-context-app)
 
 **Install:**\
 npm i -S @webkrafters/react-observable-context\
