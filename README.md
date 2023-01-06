@@ -365,7 +365,7 @@ const Provider = ({ c = initialState.c }) => {
 			storage={ storage }
 			value={ state }
 		>
-			<Client />
+			<Ui />
 		</ObservableContext.Provider>
 	);
 };
