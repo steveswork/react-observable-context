@@ -251,21 +251,16 @@ The React-Observable-Context module contains **4** exports namely:
 
 <i><b><u>context.js</u></b></i>
 ```
-import { connect, createContext, useContext } from '@webkrafters/react-observable-context';
+import { createContext } from '@webkrafters/react-observable-context';
 
-const ObservableContext = createContext();
-
-export const connectObservableContext = selectorMap => connect( ObservablContext, selectorMap );
-
-export const useObservableContext = selectorMap => useContext( ObservableContext, selectorMap );
-
-export default ObservableContext;
+export default createContext();
 ```
 
 <i><b><u>ui.js</u></b> (connect method)</i>
 ```
 import React, { useCallback, useEffect } from 'react';
-import ObservableContext, { connnectObservableContext } from './context';
+import { connect } from '@webkrafters/react-observable-context';
+import ObservableContext from './context';
 
 export const YearText = ({ data }) => ( <div>Year: { data.year }</div> );
 export const YearInput = ({ data, setState, resetState }) => {
@@ -278,7 +273,7 @@ export const YearInput = ({ data, setState, resetState }) => {
 	return ( <div>Year: <input type="number" onChange={ onChange } /> );
 };
 
-const withConnector = connectObservableContext({ year: 'a.b.x.y.z[0]' });
+const withConnector = connect( ObservablContext, { year: 'a.b.x.y.z[0]' } );
 const Client1 = withConnector( YearText );
 const Client2 = withConnector( YearInput );
 
@@ -295,17 +290,18 @@ export default Ui;
 <i><b><u>ui.js</u></b> (useContext with memo method)</i>
 ```
 import React, { memo, useCallback, useEffect } from 'react';
-import ObservableContext, { useObservableContext } from './context';
+import { useContext } from '@webkrafters/react-observable-context';
+import ObservableContext from './context';
 
 const selectorMap = { year: 'a.b.x.y.z[0]' };
 
 const Client1 = memo(() => { // memoize to prevent 'no-change' renders from the parent.
-	const { data } = useObservableContext( selectorMap );
+	const { data } = useContext( ObservableContext, selectorMap );
 	return ( <div>Year: { data.year }</div> );
 });
 
 const Client2 = memo(() => { // memoize to prevent 'no-change' renders from the parent.
-	const { data, setState, resetState } = useObservableContext( selectorMap );
+	const { data, setState, resetState } = useContext( ObservableContext, selectorMap );
 	const onChange = useCallback( e => setState({
 		a: { b: { x: { y: { z: { 0: e.target.value } } } } }
 	}), [ setState ]);
