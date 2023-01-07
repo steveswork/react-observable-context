@@ -252,7 +252,6 @@ The React-Observable-Context module contains **4** exports namely:
 <i><b><u>context.js</u></b></i>
 ```
 import { createContext } from '@webkrafters/react-observable-context';
-
 export default createContext();
 ```
 
@@ -323,19 +322,11 @@ export default Ui;
 
 <i id="provider-usage"><b><u>provider.js</u></b></i>
 ```
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ObservableContext from './context';
 import Ui from './ui';
 
-const initialState = { a: { b: { c: 25, x: { y: { z: [ 2022 ] } } } } };
-
-const createStorageStub = data => ({
-	clone( data ) { return <your clone function>( data ) }, 
-	data,
-	getItem( key ) { return this.data },
-	removeItem( key ) {},
-	setItem( key, data ) {} 
-});
+const DEFAULT_C = 36;
 
 const updateHooks = {
 	resetState: ( ...args ) => {
@@ -348,21 +339,32 @@ const updateHooks = {
 	}
 };
 
-const Provider = ({ c = initialState.c }) => {
+const storageStub = {
+	clone( data ) { return <your clone function>( data ) }, 
+	data: null,
+	getItem( key ) { return this.data },
+	removeItem( key ) { this.data = null },
+	setItem( key, data ) { this.data = data } 
+};
+
+const Provider = ({ c = DEFAULT_C }) => {
 	
-	const storage = useMemo(() => createStorageStub({ ...initialsState, c }), []);
-	
-	const [ state, setState ] = useState(() => storage.getItem());
+	const [ state, setState ] = useState(() => ({
+		a: { b: { c, x: { y: { z: [ 2022 ] } } } });
+	}));
 	
 	useEffect(() => {
-		setState({ c }); // use this (similar to `store.setState`) to update only the changed slice of the context internal state.
-		// Do not do this: `setState({ ...state, c });` // it will override the context internal state.
+		// similar to `store.setState`, use the following to update
+		// only the changed slice of the context internal state.
+		setState({ a: { b: { c } } });
+		// Do not do the following: it will override the context internal state.
+		// setState({ ...state, a: { ...state.a, b: { ...state.a.b, c } } });
 	}, [ c ]);
 	
 	return (
 		<ObservableContext.Provider
 			prehooks={ updateHooks }
-			storage={ storage }
+			storage={ storageStub }
 			value={ state }
 		>
 			<Ui />
