@@ -200,7 +200,7 @@ store.setState({ a: { b: { 0: { y: 30 }, 1: 22 } } });
 
 // The previous statement is functionally equivalent to the following:
 const [ first, second, ...rest ] = state.a.b;
-store.setState({ ...state, a: { ...a, b: [ { ...first, y: 30 }, 22, ...rest ] } });
+store.setState({ ...state, a: { ...state.a, b: [ { ...first, y: 30 }, 22, ...rest ] } });
 // Refrain from doing this, please!
 ```
 
