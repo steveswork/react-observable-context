@@ -13,7 +13,7 @@
 	</a>
 	<img alt="NPM" src="https://img.shields.io/npm/l/@webkrafters/react-observable-context">
 	<img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2032">
-	<img alt="npm bundle size (scoped)" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/react-observable-context">
+	<img alt="build size" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/react-observable-context?label=bundle%20size">
 	<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/webKrafters/react-observable-context">
 </p>
 
@@ -76,7 +76,7 @@ A property path is a dot-notation string leading to a specific property within a
 
 <strong id="property-path-example">Ex. Given the following object:</strong>
 
-```
+```jsx
 {
 	a: {
 		c: {
@@ -106,7 +106,7 @@ A selector map is an object holding key:value pairs.<br />
 
 <strong id="selector-map-example">Example:</strong>
 
-```
+```jsx
 // Given the following state object:
 const state = {
 	a: 1,
@@ -186,7 +186,7 @@ Existing array state property can be overridden with a new array.<br />
 Use the indexed object to update array content at indexes.<br />
 <strong>Example:</strong>
 
-```
+```jsx
 // Given the following array bearing state object:
 const state = { a: { b: [ { x: 7, y: 8, z: 9 } ] }, j: 10 };
 
@@ -250,13 +250,13 @@ The React-Observable-Context module contains **4** exports namely:
 # Usage
 
 <i><b><u>context.js</u></b></i>
-```
+```jsx
 import { createContext } from '@webkrafters/react-observable-context';
 export default createContext();
 ```
 
 <i><b><u>ui.js</u></b> (connect method)</i>
-```
+```jsx
 import React, { useCallback, useEffect } from 'react';
 import { connect } from '@webkrafters/react-observable-context';
 import ObservableContext from './context';
@@ -287,7 +287,7 @@ export default Ui;
 ```
 
 <i><b><u>ui.js</u></b> (useContext with memo method)</i>
-```
+```jsx
 import React, { memo, useCallback, useEffect } from 'react';
 import { useContext } from '@webkrafters/react-observable-context';
 import ObservableContext from './context';
@@ -321,7 +321,7 @@ export default Ui;
 ```
 
 <i id="provider-usage"><b><u>provider.js</u></b></i>
-```
+```jsx
 import React, { useEffect, useState } from 'react';
 import ObservableContext from './context';
 import Ui from './ui';
@@ -377,7 +377,7 @@ export default Provider;
 ```
 
 <i><b><u>index.js</u></b></i>
-```
+```jsx
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Provider from './provider';
