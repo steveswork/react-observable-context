@@ -14,6 +14,9 @@
 	<img alt="NPM" src="https://img.shields.io/npm/l/@webkrafters/react-observable-context">
 	<img alt="Maintenance" src="https://img.shields.io/maintenance/yes/2032">
 	<img alt="build size" src="https://img.shields.io/bundlephobia/minzip/@webkrafters/react-observable-context?label=bundle%20size">
+	<a href="https://www.npmjs.com/package/@webKrafters/react-observable-context">
+		<img alt="Downloads" src="https://img.shields.io/npm/dt/@webkrafters/react-observable-context.svg">
+	</a>
 	<img alt="GitHub package.json version" src="https://img.shields.io/github/package-json/v/webKrafters/react-observable-context">
 </p>
 
@@ -91,7 +94,7 @@ Either of the property paths `a.c.f.1` and `a.c.f[1]`  accesses the `[1]=2` prop
 A special property path [@@STATE](#fullstate-selectorkey) may be used to access the full given object.<br />
 
 <strong id="fullstate-selectorkey"><u>@@STATE</u></strong> is a special property path to access the full state object as a single slice.<br />
-***Caution:***  When this property path exists in a <a href="#selector-map">selector map</a>, any change in the state object results in an update of its <a href="#store"><code>store.data</code></a> and a subsequent render of its client(s).
+***Caution:*** :warning: When this property path exists in a <a href="#selector-map">selector map</a>, any change in the state object results in an update of its <a href="#store"><code>store.data</code></a> and a subsequent render of its client(s).
 
 ## Provider
 The Provider component is a property of the `React-Observable-Context` context object. As a `React.context` based provider, it accepts the customary `children` and `value` props. It also accepts **2** optional props: <a href="#prehooks"><code>prehooks</code></a> and <a href="#storage"><code>storage</code></a>.
@@ -179,8 +182,8 @@ The `React.Observable.Context` context `store` is the client's portal into the c
 <span style="margin: 5px 10px 0 0">-</span>Performs no state reset when a client with no selector map invokes this method with 0 arguments.
 
 <h3 id="store-setstate" style="margin-top:10px"><code>store.setState</code> Usage</h3>
-<b><i>Do this:</i></b> <code>setState({stateKey0: changes0[, ...]});</code><br />
-<b><i>Not this:</i></b> <code>setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});</code>
+:warning: <b><i>Do this:</i></b> <code>setState({stateKey0: changes0[, ...]});</code><br />
+:warning: <b><i>Not this:</i></b> <code>setState({stateKey0: {...state.stateKey0, ...changes0}[, ...]});</code>
 <h3 id="indexing"><b><i><u>Indexing</u></i></b></h3>
 Existing array state property can be overridden with a new array.<br />
 Use the indexed object to update array content at indexes.<br />
