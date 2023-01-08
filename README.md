@@ -130,7 +130,7 @@ const selectorMap = {
 // will receive the following store data
 store.data = {
 	all: state,
-	myData: state.d
+	myData: state.d,
 	secondFElement: state.d.f[1]
 }
 ```
